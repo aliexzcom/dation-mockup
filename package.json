@@ -1,0 +1,26 @@
+{
+  "name": "dation-mockup",
+  "private": true,
+  "version": "1.2.0",
+  "type": "module",
+  "description": "Макет веб-приложения Dation по ТЗ v1.2",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^10.5.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "globals": "^17.7.0",
+    "vite": "^5.4.2"
+  }
+}
