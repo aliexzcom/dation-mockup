@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { PageHead, Button, Card, Tabs, Badge, Table, Field, Input, Textarea, Select, SearchInput, Chips, Empty, Drawer, KV } from '../components/ui.jsx'
+import { DatePicker } from '../components/DatePicker.jsx'
+import { formatUzbPhone } from '../components/phone.js'
 import { IcPlus, IcExport, IcTrash } from '../components/icons.jsx'
 
 // --- Мок-данные ---
@@ -53,7 +55,6 @@ const EMPTY_CLIENT = {
   name: '',
   lastName: '',
   phone: '',
-  telegram: '',
   birthday: '',
   gender: 'Не указан',
   source: 'Выберите источник',
@@ -249,25 +250,15 @@ function NewClientDrawer({ open, onClose, onSave }) {
         </div>
         <Field label="Телефон (основной)">
           <Input
-            placeholder="+7 (___) ___-__-__"
+            type="tel"
+            placeholder="+998 90 123 45 67"
             value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          />
-        </Field>
-        <Field label="Telegram (username или ID)">
-          <Input
-            placeholder="@username или 1234567890"
-            value={form.telegram}
-            onChange={(e) => setForm({ ...form, telegram: e.target.value })}
+            onChange={(e) => setForm({ ...form, phone: formatUzbPhone(e.target.value) })}
           />
         </Field>
         <div className="grid grid-2">
           <Field label="Дата рождения">
-            <Input
-              type="date"
-              value={form.birthday}
-              onChange={(e) => setForm({ ...form, birthday: e.target.value })}
-            />
+            <DatePicker value={form.birthday} onChange={(v) => setForm({ ...form, birthday: v })} />
           </Field>
           <Field label="Пол">
             <Select
@@ -330,7 +321,7 @@ export default function Clients() {
       ini: initials || '?',
       name: fullName,
       phone: form.phone || '—',
-      telegram: form.telegram || '—',
+      telegram: '—',
       visits: 0,
       spent: '0 ₽',
       lastVisit: '—',
@@ -416,7 +407,7 @@ export default function Clients() {
                       </div>
                     )}
                   </td>
-                  <td>{r.phone}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{r.phone}</td>
                   <td>{r.telegram}</td>
                   <td className="num">{r.visits}</td>
                   <td className="num">{r.spent}</td>

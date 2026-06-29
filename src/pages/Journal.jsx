@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
-import { PageHead, Button, Tabs, Drawer, Field, Input, Select, Card, Badge } from '../components/ui.jsx'
-import { IcArrowL, IcArrowR, IcPlus, IcFilter } from '../components/icons.jsx'
+import { useState, useEffect, useRef } from 'react'
+import { PageHead, Button, Segmented, Drawer, Field, Input, Select, Card, Badge, Table } from '../components/ui.jsx'
+import { DateTimePicker } from '../components/DateTimePicker.jsx'
+import { IcArrowL, IcArrowR, IcPlus, IcFilter, IcSearch } from '../components/icons.jsx'
 
 // п. 4.5 — статусы визита
 const STATUSES = {
@@ -20,6 +21,11 @@ const STAFF = [
 ]
 
 const HOURS = Array.from({ length: 12 }, (_, i) => 9 + i) // 09:00–20:00
+const START_HOUR = 9
+const HOUR_H = 84   // высота часа, px
+const HEADER_H = 56 // высота шапки колонки сотрудника
+const GRID_H = HOURS.length * HOUR_H
+const fmtTimeShort = (t) => { const h = Math.floor(t); const m = Math.round((t - h) * 60); return m ? `${h}:${String(m).padStart(2, '0')}` : `${h}:00` }
 
 // Записи: staffId, час начала, длительность (в часах), клиент, услуга, статус
 const INITIAL_APPTS = [
@@ -39,10 +45,23 @@ export default function Journal() {
   const [view, setView] = useState('День')
   const [drawer, setDrawer] = useState(null) // null | 'new' | appt
   const [appts, setAppts] = useState(INITIAL_APPTS)
+  const [payAppt, setPayAppt] = useState(null)
+  const [date, setDate] = useState(new Date(2026, 5, 24)) // «сегодня» в макете — 24 июня 2026
 
-  const handleSave = (appt) => {
+  const shiftDate = (delta) => setDate((prev) => {
+    const n = new Date(prev)
+    n.setDate(n.getDate() + delta)
+    return n
+  })
+  const dateLabel = (() => {
+    const s = date.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/\s*г\.$/, '')
+    return s.charAt(0).toUpperCase() + s.slice(1)
+  })()
+
+  const handleSave = (appt, pay) => {
     setAppts((prev) => [...prev, appt])
     setDrawer(null)
+    if (pay) setPayAppt(appt)
   }
 
   return (
@@ -58,19 +77,22 @@ export default function Journal() {
       />
 
       {/* Виды: День / Неделя / Месяц / Список (п. 4.2) */}
-      <Tabs tabs={['День', 'Неделя', 'Месяц', 'Список записей']} active={view} onChange={setView} />
+      <div style={{ marginBottom: 16 }}>
+        <Segmented items={['День', 'Неделя', 'Месяц', 'Список записей']} active={view} onChange={setView} />
+      </div>
 
       {/* Панель управления: навигация по датам, режим, шаг времени (п. 4.3) */}
       <div className="toolbar">
-        <Button variant="ghost" size="sm"><IcArrowL size={16} /></Button>
-        <Button variant="secondary" size="sm">Сегодня</Button>
-        <Button variant="ghost" size="sm"><IcArrowR size={16} /></Button>
-        <strong style={{ marginLeft: 6 }}>Вторник, 24 июня 2026</strong>
+        <Button variant="ghost" size="sm" onClick={() => shiftDate(-1)}><IcArrowL size={16} /></Button>
+        <strong style={{ minWidth: 210, textAlign: 'center' }}>{dateLabel}</strong>
+        <Button variant="ghost" size="sm" onClick={() => shiftDate(1)}><IcArrowR size={16} /></Button>
       </div>
 
       {view === 'Список записей' ? <ListView appts={appts} onOpen={setDrawer} /> : <DayGrid appts={appts} onOpen={setDrawer} />}
 
       <AppointmentDrawer open={!!drawer} appt={drawer === 'new' ? null : drawer} onClose={() => setDrawer(null)} onSave={handleSave} />
+
+      <PaymentDrawer appt={payAppt} open={!!payAppt} onClose={() => setPayAppt(null)} />
     </>
   )
 }
@@ -78,31 +100,35 @@ export default function Journal() {
 function DayGrid({ appts, onOpen }) {
   return (
     <Card pad={false}>
-      <div style={{ display: 'grid', gridTemplateColumns: `64px repeat(${STAFF.length}, 1fr)`, overflowX: 'auto' }}>
-        {/* шапка колонок сотрудников */}
-        <div style={{ borderBottom: '1px solid var(--border)', borderRight: '1px solid var(--border)' }} />
-        {STAFF.map((s) => (
-          <div key={s.id} style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', borderRight: '1px solid var(--border)', display: 'flex', gap: 9, alignItems: 'center' }}>
-            <div className="avatar-sm">{s.ini}</div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
-              <div className="small faint" style={{ whiteSpace: 'nowrap' }}>{s.role}</div>
-            </div>
-          </div>
-        ))}
+      <div style={{ display: 'flex', overflowX: 'auto' }}>
+        {/* Шкала времени */}
+        <div style={{ width: 56, flexShrink: 0, borderRight: '1px solid var(--border)' }}>
+          <div style={{ height: HEADER_H, borderBottom: '1px solid var(--border)' }} />
+          {HOURS.map((h) => (
+            <div key={h} style={{ height: HOUR_H, padding: '5px 8px 0', fontSize: 11.5, color: 'var(--text-faint)', textAlign: 'right' }}>{h}:00</div>
+          ))}
+        </div>
 
-        {/* сетка времени */}
-        {HOURS.map((h) => (
-          <div key={h} style={{ display: 'contents' }}>
-            <div style={{ padding: '6px 8px', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', color: 'var(--text-faint)', fontSize: 12, height: 60 }}>{h}:00</div>
-            {STAFF.map((s) => {
-              const appt = appts.find((a) => a.staff === s.id && Math.floor(a.start) === h && a.start - h < 1)
-              return (
-                <div key={s.id} style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', height: 60, position: 'relative', background: h < 9 ? 'var(--bg-soft)' : '#fff' }}>
-                  {appt && <ApptCell appt={appt} hour={h} onOpen={onOpen} />}
-                </div>
-              )
-            })}
+        {/* Колонки сотрудников */}
+        {STAFF.map((s) => (
+          <div key={s.id} style={{ flex: 1, minWidth: 175, borderRight: '1px solid var(--border)' }}>
+            {/* шапка сотрудника */}
+            <div style={{ height: HEADER_H, padding: '0 12px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 9, alignItems: 'center' }}>
+              <div className="avatar-sm">{s.ini}</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
+                <div className="small faint" style={{ whiteSpace: 'nowrap' }}>{s.role}</div>
+              </div>
+            </div>
+            {/* тело колонки: линии часов + записи поверх */}
+            <div style={{ position: 'relative', height: GRID_H }}>
+              {HOURS.map((h, i) => (
+                <div key={h} style={{ position: 'absolute', left: 0, right: 0, top: i * HOUR_H, height: HOUR_H, borderBottom: '1px solid var(--border)', background: i % 2 ? 'var(--bg-soft)' : 'var(--panel)' }} />
+              ))}
+              {appts.filter((a) => a.staff === s.id).map((a, i) => (
+                <ApptCell key={i} appt={a} onOpen={onOpen} />
+              ))}
+            </div>
           </div>
         ))}
       </div>
@@ -110,21 +136,25 @@ function DayGrid({ appts, onOpen }) {
   )
 }
 
-function ApptCell({ appt, hour, onOpen }) {
+function ApptCell({ appt, onOpen }) {
   const st = STATUSES[appt.status]
-  const top = (appt.start - hour) * 60
-  const height = appt.dur * 60 - 4
+  const top = (appt.start - START_HOUR) * HOUR_H
+  const height = appt.dur * HOUR_H - 5
   return (
     <div
+      className="appt"
       onClick={() => onOpen(appt)}
-      title="Перетащите для переноса (drag-and-drop)"
+      title="Открыть запись"
       style={{
-        position: 'absolute', left: 3, right: 3, top: top + 1, height,
-        background: st.c, borderLeft: `3px solid ${st.b}`, borderRadius: 6,
-        padding: '4px 7px', cursor: 'pointer', overflow: 'hidden', fontSize: 12,
+        position: 'absolute', left: 5, right: 5, top: top + 2, height,
+        background: st.c, borderLeft: `3px solid ${st.b}`, borderRadius: 8,
+        padding: '6px 9px', cursor: 'pointer', overflow: 'hidden',
       }}>
-      <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{appt.client}</div>
-      <div className="small" style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{appt.service}</div>
+      <div style={{ fontSize: 11, color: '#5B6472', fontWeight: 600 }}>{fmtTimeShort(appt.start)}–{fmtTimeShort(appt.start + appt.dur)}</div>
+      <div style={{ fontWeight: 600, fontSize: 13, color: '#1F2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{appt.client}</div>
+      {appt.service.split(' + ').map((s, i) => (
+        <div key={i} className="small" style={{ color: '#475569', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s}</div>
+      ))}
     </div>
   )
 }
@@ -173,6 +203,202 @@ const EMPTY_APPT = {
   status: STATUSES.wait.label, src: 'Telegram Mini App', comment: '', notify: true,
 }
 
+// Клиентская база для поиска при создании записи
+const CLIENT_BASE = [
+  { name: 'Мария Петрова', phone: '+7 900 123-45-67' },
+  { name: 'Ольга Кузнецова', phone: '+7 910 234-56-78' },
+  { name: 'Елена Смирнова', phone: '+7 920 345-67-89' },
+  { name: 'Артём Белов', phone: '+7 930 456-78-90' },
+  { name: 'Дарья Лебедева', phone: '+7 940 567-89-01' },
+  { name: 'Светлана Новикова', phone: '+7 950 678-90-12' },
+  { name: 'Инна Рыжова', phone: '+7 960 789-01-23' },
+  { name: 'Павел Морозов', phone: '+7 970 890-12-34' },
+]
+
+// Поле поиска клиента с выпадающим списком
+function ClientSearch({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  const q = value.trim().toLowerCase()
+  const matches = q
+    ? CLIENT_BASE.filter((c) => c.name.toLowerCase().includes(q) || c.phone.replace(/\D/g, '').includes(q.replace(/\D/g, '')))
+    : CLIENT_BASE
+
+  return (
+    <div className="dropdown" ref={ref}>
+      <div className="search-sm" style={{ width: '100%' }}>
+        <IcSearch size={16} />
+        <input
+          placeholder="Поиск клиента по имени или телефону"
+          value={value}
+          onChange={(e) => { onChange(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+        />
+      </div>
+      {open && (
+        <div className="dropdown-menu">
+          {/* Закреплённая сверху кнопка — всегда видна */}
+          <div className="dropdown-item" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--violet)', fontWeight: 600, borderBottom: '1px solid var(--border)', marginBottom: 2 }} onClick={() => setOpen(false)}>
+            <IcPlus size={14} /> Новый клиент
+          </div>
+          {/* Прокручиваемый список клиентов */}
+          <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+            {matches.map((c, i) => (
+              <div key={i} className="dropdown-item" onClick={() => { onChange(c.name); setOpen(false) }} style={{ whiteSpace: 'normal' }}>
+                <div style={{ fontWeight: 500 }}>{c.name}</div>
+                <div className="small muted">{c.phone}</div>
+              </div>
+            ))}
+            {matches.length === 0 && <div className="dropdown-item muted">Не найдено</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// База услуг для поиска при создании записи
+const SERVICE_BASE = [
+  { name: 'Женская стрижка', price: '2 000 ₽', dur: '1 ч' },
+  { name: 'Мужская стрижка', price: '1 200 ₽', dur: '45 мин' },
+  { name: 'Стрижка бороды', price: '800 ₽', dur: '30 мин' },
+  { name: 'Окрашивание', price: '4 500 ₽', dur: '2 ч' },
+  { name: 'Балаяж / Омбре', price: '7 000 ₽', dur: '3 ч' },
+  { name: 'Маникюр + покрытие', price: '2 200 ₽', dur: '1 ч 30 мин' },
+  { name: 'Педикюр', price: '2 500 ₽', dur: '1 ч 30 мин' },
+  { name: 'Наращивание ногтей', price: '4 500 ₽', dur: '2 ч' },
+  { name: 'Чистка лица', price: '3 500 ₽', dur: '1 ч' },
+  { name: 'Укладка', price: '900 ₽', dur: '45 мин' },
+]
+
+// Длительность услуг -> минуты, сумма, подпись
+const parseDurToMin = (str) => {
+  let min = 0
+  const h = String(str).match(/(\d+)\s*ч/); if (h) min += +h[1] * 60
+  const m = String(str).match(/(\d+)\s*мин/); if (m) min += +m[1]
+  return min
+}
+const DUR_MIN = Object.fromEntries(SERVICE_BASE.map((s) => [s.name, parseDurToMin(s.dur)]))
+const sumServiceMin = (service) => (service ? service.split(' + ').filter(Boolean) : []).reduce((sum, n) => sum + (DUR_MIN[n] || 0), 0)
+
+// Поиск и мультивыбор услуг (значение — строка «X + Y»)
+function ServiceSearch({ value, onChange }) {
+  const selected = value ? value.split(' + ').filter(Boolean) : []
+  const [q, setQ] = useState('')
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  const matches = SERVICE_BASE.filter((s) => s.name.toLowerCase().includes(q.trim().toLowerCase()) && !selected.includes(s.name))
+  const add = (name) => { onChange([...selected, name].join(' + ')); setQ(''); setOpen(false) }
+  const remove = (name) => onChange(selected.filter((x) => x !== name).join(' + '))
+
+  return (
+    <div className="dropdown" ref={ref}>
+      {selected.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+          {selected.map((s, i) => (
+            <span key={i} className="tag" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              {s}
+              <span style={{ cursor: 'pointer', fontWeight: 700 }} onClick={() => remove(s)}>×</span>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="search-sm" style={{ width: '100%' }}>
+        <IcSearch size={16} />
+        <input placeholder="Поиск услуги" value={q} onChange={(e) => { setQ(e.target.value); setOpen(true) }} onFocus={() => setOpen(true)} />
+      </div>
+      {open && (
+        <div className="dropdown-menu" style={{ maxHeight: 240, overflowY: 'auto' }}>
+          {matches.map((s, i) => (
+            <div key={i} className="dropdown-item" onClick={() => add(s.name)} style={{ whiteSpace: 'normal' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <span style={{ fontWeight: 500 }}>{s.name}</span>
+                <span className="small muted">{s.price}</span>
+              </div>
+              <div className="small faint">{s.dur}</div>
+            </div>
+          ))}
+          {matches.length === 0 && <div className="dropdown-item muted">Услуга не найдена</div>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const parsePrice = (p) => Number(String(p).replace(/[^\d]/g, '')) || 0
+const fmtMoney = (n) => n.toLocaleString('ru-RU') + ' ₽'
+
+// Оплата визита
+function PaymentDrawer({ appt, open, onClose }) {
+  const [method, setMethod] = useState('Карта')
+  const [discount, setDiscount] = useState(0)
+
+  const items = appt ? (appt.service || '').split(' + ').filter(Boolean).map((name) => SERVICE_BASE.find((s) => s.name === name) || { name, price: '0 ₽' }) : []
+  const subtotal = items.reduce((s, it) => s + parsePrice(it.price), 0)
+  const total = Math.max(0, subtotal - discount)
+
+  return (
+    <Drawer
+      open={open}
+      onClose={onClose}
+      title={appt ? `Оплата визита — ${appt.client}` : 'Оплата визита'}
+      footer={<>
+        <Button onClick={onClose}>Оплатить {fmtMoney(total)}</Button>
+        <Button variant="secondary" onClick={onClose}>Частичная оплата</Button>
+        <div style={{ marginLeft: 'auto' }} />
+        <Button variant="danger" onClick={onClose}>Возврат</Button>
+      </>}
+    >
+      {appt && (
+        <>
+          <div className="section-title">Состав визита</div>
+          <Card pad={false}>
+            <Table
+              columns={[{ label: 'Услуга' }, { label: 'Цена', num: true }]}
+              rows={items}
+              renderRow={(r, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 500 }}>{r.name}</td>
+                  <td className="num">{r.price}</td>
+                </tr>
+              )}
+            />
+          </Card>
+
+          <div className="divider" />
+          <Field label="Скидка (₽)">
+            <Input type="number" placeholder="0" value={discount || ''} onChange={(e) => setDiscount(Number(e.target.value) || 0)} />
+          </Field>
+          <div className="kv"><span className="k">Подытог</span><span>{fmtMoney(subtotal)}</span></div>
+          <div className="kv"><span className="k">Скидка</span><span>−{fmtMoney(discount)}</span></div>
+          <div className="kv" style={{ fontWeight: 700, fontSize: 16 }}><span>Итого к оплате</span><span style={{ color: 'var(--violet)' }}>{fmtMoney(total)}</span></div>
+
+          <div className="divider" />
+          <Field label="Способ оплаты">
+            <Select options={['Наличные', 'Карта', 'Перевод', 'Онлайн (Mini App)', 'Смешанная', 'Бонусы']} value={method} onChange={(e) => setMethod(e.target.value)} />
+          </Field>
+          <label className="checkbox"><input type="checkbox" defaultChecked /> <span>Отправить чек клиенту в Telegram</span></label>
+        </>
+      )}
+    </Drawer>
+  )
+}
+
 // п. 4.4 — карточка записи (создание/редактирование)
 function AppointmentDrawer({ open, appt, onClose, onSave }) {
   const [form, setForm] = useState(EMPTY_APPT)
@@ -194,17 +420,17 @@ function AppointmentDrawer({ open, appt, onClose, onSave }) {
     }
   }, [open, appt])
 
-  const save = () => {
+  const save = (pay) => {
     if (!form.client.trim() || !form.service.trim()) return
     onSave({
       staff: STAFF.find((s) => s.name === form.staffName)?.id || STAFF[0].id,
       start: timeToHour(form.time),
-      dur: DURATIONS.find(([l]) => l === form.duration)?.[1] || 1,
+      dur: (sumServiceMin(form.service) / 60) || 1,
       client: form.client.trim(),
       service: form.service.trim(),
       status: statusKeyByLabel(form.status),
       src: form.src,
-    })
+    }, pay)
   }
 
   return (
@@ -213,26 +439,22 @@ function AppointmentDrawer({ open, appt, onClose, onSave }) {
       onClose={onClose}
       title={appt ? 'Карточка записи' : 'Новая запись'}
       footer={<>
-        <Button onClick={save}>Сохранить</Button>
-        <Button variant="secondary" onClick={save}>Сохранить и оплатить</Button>
+        <Button onClick={() => save(false)}>Сохранить</Button>
+        <Button variant="secondary" onClick={() => save(true)}>Сохранить и оплатить</Button>
         <div style={{ marginLeft: 'auto' }} />
         {appt && <Button variant="danger" onClick={onClose}>Удалить</Button>}
       </>}
     >
-      <Field label="Клиент"><Input placeholder="Поиск по базе или + Новый клиент" value={form.client} onChange={(e) => set('client', e.target.value)} /></Field>
-      <div className="row-fields">
-        <Field label="Дата"><Input type="date" value={form.date} onChange={(e) => set('date', e.target.value)} /></Field>
-        <Field label="Время начала"><Input type="time" value={form.time} onChange={(e) => set('time', e.target.value)} /></Field>
-      </div>
+      <Field label="Клиент"><ClientSearch value={form.client} onChange={(v) => set('client', v)} /></Field>
+      <Field label="Дата и время">
+        <DateTimePicker date={form.date} time={form.time} onChange={(d, t) => setForm((f) => ({ ...f, date: d, time: t }))} minuteStep={15} />
+      </Field>
       <div className="row-fields">
         <Field label="Сотрудник"><Select options={STAFF.map(s => s.name)} value={form.staffName} onChange={(e) => set('staffName', e.target.value)} /></Field>
         <Field label="Ресурс / кабинет"><Select options={['Кресло 1', 'Кресло 2', 'Кабинет косметолога']} value={form.resource} onChange={(e) => set('resource', e.target.value)} /></Field>
       </div>
-      <Field label="Услуги"><Input placeholder="Добавить услугу…" value={form.service} onChange={(e) => set('service', e.target.value)} /></Field>
-      <div className="row-fields">
-        <Field label="Длительность"><Select options={DURATIONS.map(([l]) => l)} value={form.duration} onChange={(e) => set('duration', e.target.value)} /></Field>
-        <Field label="Скидка"><Input placeholder="0%" value={form.discount} onChange={(e) => set('discount', e.target.value)} /></Field>
-      </div>
+      <Field label="Услуги"><ServiceSearch value={form.service} onChange={(v) => set('service', v)} /></Field>
+      <Field label="Скидка"><Input placeholder="0%" value={form.discount} onChange={(e) => set('discount', e.target.value)} /></Field>
       <div className="row-fields">
         <Field label="Статус визита">
           <Select options={Object.values(STATUSES).map(s => s.label)} value={form.status} onChange={(e) => set('status', e.target.value)} />
@@ -241,14 +463,6 @@ function AppointmentDrawer({ open, appt, onClose, onSave }) {
       </div>
       <Field label="Комментарий"><Input placeholder="Комментарий администратора" value={form.comment} onChange={(e) => set('comment', e.target.value)} /></Field>
       <label className="checkbox"><input type="checkbox" checked={form.notify} onChange={(e) => set('notify', e.target.checked)} /> <span>Уведомить клиента через Telegram-бота</span></label>
-
-      <div className="divider" />
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        <Button size="sm" variant="secondary">Перенести</Button>
-        <Button size="sm" variant="secondary">Открыть карточку клиента</Button>
-        <Button size="sm" variant="secondary">Отметить приход</Button>
-        <Button size="sm" variant="ghost">Не пришёл</Button>
-      </div>
     </Drawer>
   )
 }

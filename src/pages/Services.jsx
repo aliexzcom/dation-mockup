@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PageHead, Button, Card, Tabs, Badge, Table, Field, Input, Textarea, Select, Switch, Drawer, KV } from '../components/ui.jsx'
+import { ServicePicker } from '../components/ServicePicker.jsx'
 import { IcPlus, IcExport, IcEdit, IcTrash } from '../components/icons.jsx'
 
 // --- Мок-данные ---
@@ -31,7 +32,7 @@ const INITIAL_SERVICES = [
   { id: 12, name: 'Химический пилинг', cat: 'Пилинги', catId: 10, price: '4 000 ₽', duration: 45, buffer: 15, miniapp: false, skill: 'Косметолог', vat: true },
 ]
 
-const PACKAGES = [
+const INITIAL_PACKAGES = [
   {
     id: 1,
     name: 'Пакет «Полный образ»',
@@ -49,6 +50,8 @@ const PACKAGES = [
     miniapp: false,
   },
 ]
+
+const EMPTY_PACKAGE = { name: '', services: [], price: '', discount: '', miniapp: true }
 
 const STAFF_PRICES = [
   { staff: 'Анна Морозова', price: '2 500 ₽', commission: '35%' },
@@ -70,7 +73,6 @@ const EMPTY_SERVICE = {
   priceTo: '',
   duration: '',
   buffer: '',
-  skill: 'Любой сотрудник',
   description: '',
 }
 
@@ -111,7 +113,6 @@ function ServiceDrawer({ service, open, onClose, isNew, onSave }) {
       duration: parseInt(form.duration) || 0,
       buffer: parseInt(form.buffer) || 0,
       miniapp: miniApp,
-      skill: form.skill,
       vat: vatOn,
     })
     setForm(EMPTY_SERVICE)
@@ -196,7 +197,7 @@ function ServiceDrawer({ service, open, onClose, isNew, onSave }) {
                 onChange={(e) => setForm({ ...form, duration: e.target.value })}
               />
             </Field>
-            <Field label="Буфер (мин)">
+            <Field label="Подготовка после клиента (мин)">
               <Input
                 type="number"
                 placeholder="10"
@@ -205,14 +206,6 @@ function ServiceDrawer({ service, open, onClose, isNew, onSave }) {
               />
             </Field>
           </div>
-
-          <Field label="Требуемая квалификация сотрудника">
-            <Select
-              options={['Любой сотрудник', 'Парикмахер', 'Барбер', 'Колорист', 'Мастер ногтей', 'Косметолог']}
-              value={form.skill}
-              onChange={(e) => setForm({ ...form, skill: e.target.value })}
-            />
-          </Field>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Switch on={vatOn} onClick={() => setVatOn(!vatOn)} />
@@ -256,14 +249,11 @@ function ServiceDrawer({ service, open, onClose, isNew, onSave }) {
 
           <div className="grid grid-2">
             <Field label="Длительность (мин)"><Input type="number" placeholder="60" defaultValue={service ? service.duration : ''} /></Field>
-            <Field label="Буфер (мин)"><Input type="number" placeholder="10" defaultValue={service ? service.buffer : ''} /></Field>
+            <Field label="Подготовка после клиента (мин)"><Input type="number" placeholder="10" defaultValue={service ? service.buffer : ''} /></Field>
           </div>
 
           <Field label="Требуемый ресурс / оборудование">
             <Input placeholder="Например: Кресло барбера, УФ-лампа" />
-          </Field>
-          <Field label="Требуемая квалификация сотрудника">
-            <Select options={['Любой сотрудник', 'Парикмахер', 'Барбер', 'Колорист', 'Мастер ногтей', 'Косметолог']} />
           </Field>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -364,6 +354,13 @@ export default function Services() {
   const [selectedService, setSelectedService] = useState(null)
   const [newServiceOpen, setNewServiceOpen] = useState(false)
   const [newCatOpen, setNewCatOpen] = useState(false)
+  const [packages, setPackages] = useState(INITIAL_PACKAGES)
+  const [newPkgOpen, setNewPkgOpen] = useState(false)
+
+  function handleSavePackage(newPkg) {
+    setPackages([newPkg, ...packages])
+    setNewPkgOpen(false)
+  }
 
   const rootCats = categories.filter((c) => c.parent === null)
   const childCats = (parentId) => categories.filter((c) => c.parent === parentId)
@@ -395,11 +392,7 @@ export default function Services() {
         title="Услуги"
         sub="Каталог услуг, прайс-лист, пакеты и техкарты."
         actions={
-          <>
-            <Button variant="ghost" size="sm"><IcExport size={16} /> Импорт прайса</Button>
-            <Button variant="secondary" size="sm" onClick={() => setNewCatOpen(true)}><IcPlus size={16} /> Категория</Button>
-            <Button size="sm" onClick={() => setNewServiceOpen(true)}><IcPlus size={16} /> Услуга</Button>
-          </>
+          <Button variant="ghost" size="sm"><IcExport size={16} /> Импорт прайса</Button>
         }
       />
 
@@ -420,6 +413,8 @@ export default function Services() {
                 setSelectedCat(c ? c.id : null)
               }}
             />
+            <div className="spacer" />
+            <Button size="sm" onClick={() => setNewServiceOpen(true)}><IcPlus size={16} /> Услуга</Button>
           </div>
           <Card pad={false}>
             <Table
@@ -513,7 +508,6 @@ export default function Services() {
                     { label: 'Подкатегория' },
                     { label: 'Цена', num: true },
                     { label: 'Длительность', num: true },
-                    { label: 'Квалификация' },
                   ]}
                   rows={catServices}
                   renderRow={(r, i) => (
@@ -522,7 +516,6 @@ export default function Services() {
                       <td>{r.cat}</td>
                       <td className="num">{r.price}</td>
                       <td className="num">{r.duration ? formatDur(r.duration) : '—'}</td>
-                      <td>{r.skill}</td>
                     </tr>
                   )}
                 />
@@ -535,10 +528,10 @@ export default function Services() {
       {tab === 'Пакеты услуг' && (
         <div style={{ marginTop: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-            <Button size="sm"><IcPlus size={16} /> Новый пакет</Button>
+            <Button size="sm" onClick={() => setNewPkgOpen(true)}><IcPlus size={16} /> Новый пакет</Button>
           </div>
           <div className="grid grid-2" style={{ gap: 16 }}>
-            {PACKAGES.map((pkg) => (
+            {packages.map((pkg) => (
               <Card
                 key={pkg.id}
                 title={pkg.name}
@@ -585,6 +578,72 @@ export default function Services() {
         onClose={() => setNewCatOpen(false)}
         onSave={handleSaveCategory}
       />
+
+      {/* Drawer нового пакета */}
+      <PackageDrawer
+        open={newPkgOpen}
+        onClose={() => setNewPkgOpen(false)}
+        onSave={handleSavePackage}
+      />
     </>
+  )
+}
+
+// --- Drawer пакета услуг ---
+function PackageDrawer({ open, onClose, onSave }) {
+  const [form, setForm] = useState(EMPTY_PACKAGE)
+  const [miniapp, setMiniapp] = useState(true)
+
+  function handleSave() {
+    if (!form.name.trim()) return
+    onSave({
+      id: Date.now(),
+      name: form.name.trim(),
+      services: form.services,
+      price: form.price || '—',
+      discount: form.discount || '0%',
+      miniapp,
+    })
+    setForm(EMPTY_PACKAGE)
+    setMiniapp(true)
+  }
+
+  function handleClose() {
+    setForm(EMPTY_PACKAGE)
+    setMiniapp(true)
+    onClose()
+  }
+
+  return (
+    <Drawer
+      title="Новый пакет"
+      open={open}
+      onClose={handleClose}
+      footer={
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button variant="secondary" onClick={handleClose}>Отмена</Button>
+          <Button onClick={handleSave}>Сохранить</Button>
+        </div>
+      }
+    >
+      <Field label="Название пакета">
+        <Input placeholder="Например: Пакет «Полный образ»" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+      </Field>
+      <Field label="Входящие услуги">
+        <ServicePicker
+          options={INITIAL_SERVICES.map((s) => ({ name: s.name, price: s.price }))}
+          value={form.services}
+          onChange={(arr) => setForm({ ...form, services: arr })}
+        />
+      </Field>
+      <div className="grid grid-2">
+        <Field label="Итоговая цена"><Input placeholder="3 900 ₽" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></Field>
+        <Field label="Скидка пакета"><Input placeholder="8%" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} /></Field>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Switch on={miniapp} onClick={() => setMiniapp(!miniapp)} />
+        <span>Доступен в Mini App (запись онлайн)</span>
+      </div>
+    </Drawer>
   )
 }

@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { NAV_ICONS, IcSearch, IcPlus, IcBell, IcChevron, IcMenu, IcLogout } from './icons.jsx'
+import { NAV_ICONS, IcBell, IcLogout } from './icons.jsx'
+import { ThemeToggle } from './ThemeToggle.jsx'
 
 // Разделы левого меню — строго по п. 3.2 ТЗ
 const NAV = [
@@ -17,11 +17,10 @@ const NAV = [
 ]
 
 export default function Layout() {
-  const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
   return (
     <div className="app">
-      <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+      <aside className="sidebar">
         <div className="sidebar-brand">
           <div className="brand-mark">D</div>
           <span className="brand-text">Dation</span>
@@ -38,34 +37,21 @@ export default function Layout() {
             )
           })}
         </nav>
-        <div className="sidebar-foot">
-          <button className="nav-item" style={{ width: '100%', background: 'transparent', border: 0 }} onClick={() => navigate('/business/branches')}>
-            <span className="nav-ico"><IcLogout size={18} /></span>
-            <span className="nav-label">Выйти из филиала</span>
+        <div className="sidebar-foot" style={{ display: 'flex', gap: 6, justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="icon-btn" title="Профиль" onClick={() => navigate('/profile')}>
+            <span className="avatar-sm" style={{ width: 28, height: 28, fontSize: 11 }}>ОВ</span>
           </button>
-          <button className="nav-item" style={{ width: '100%', background: 'transparent', border: 0 }} onClick={() => setCollapsed(!collapsed)}>
-            <span className="nav-ico"><IcMenu size={18} /></span>
-            <span className="nav-label">Свернуть меню</span>
+          <button className="icon-btn" title="Уведомления">
+            <IcBell size={18} /><span className="dot" />
+          </button>
+          <ThemeToggle compact />
+          <button className="icon-btn" title="Выйти из филиала" onClick={() => navigate('/business/branches')}>
+            <IcLogout size={18} />
           </button>
         </div>
       </aside>
 
       <div className="main">
-        <header className="topbar">
-          <button className="icon-btn" onClick={() => setCollapsed(!collapsed)}><IcMenu size={18} /></button>
-          <div className="branch-switch" onClick={() => navigate('/business/branches')} title="Сменить филиал">
-            <span>Филиал: Центральный</span>
-            <IcChevron size={16} />
-          </div>
-          <div className="search">
-            <IcSearch size={18} />
-            <input placeholder="Поиск: клиент, запись, телефон" />
-          </div>
-          <div className="topbar-spacer" />
-          <button className="btn" onClick={() => navigate('/journal')}><IcPlus size={16} /> Быстрая запись</button>
-          <button className="icon-btn" title="Уведомления"><IcBell size={18} /><span className="dot" /></button>
-          <div className="avatar" title="Профиль пользователя" onClick={() => navigate('/profile')}>ОВ</div>
-        </header>
         <main className="content">
           <Outlet />
         </main>

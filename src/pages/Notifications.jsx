@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PageHead, Button, Card, Tabs, Badge, Table, Field, Input, Textarea, Select, Switch, Drawer } from '../components/ui.jsx'
+import { DateTimePicker } from '../components/DateTimePicker.jsx'
 import { IcPlus, IcEdit } from '../components/icons.jsx'
 
 // ── Мок-данные триггеров ──────────────────────────────────────────────────────
@@ -463,7 +464,11 @@ export default function Notifications() {
           </div>
         )}
         <Field label="Запланировать отправку (дата и время)">
-          <Input type="datetime-local" value={form.schedule} onChange={e => setForm({ ...form, schedule: e.target.value })} />
+          <DateTimePicker
+            date={(form.schedule || '').split('T')[0] || ''}
+            time={(form.schedule || '').split('T')[1] || ''}
+            onChange={(d, t) => setForm({ ...form, schedule: `${d}T${t}` })}
+          />
         </Field>
         <div className="note" style={{ marginTop: 8 }}>
           Если дата не указана — рассылка будет отправлена немедленно после запуска.

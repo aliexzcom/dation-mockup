@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PageHead, Button, Badge, Field, Input, Select, Drawer } from '../components/ui.jsx'
+import { TimePicker } from '../components/TimePicker.jsx'
 import { IcPlus, IcGear } from '../components/icons.jsx'
 
 const INITIAL_BRANCHES = [
@@ -84,8 +85,8 @@ export default function SelectBranch() {
             <Field label="Адрес"><Input placeholder="Город, улица, дом" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></Field>
             <Field label="Телефон"><Input placeholder="+998 90 123 45 67" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
             <div className="grid grid-2">
-              <Field label="Начало дня"><Input type="time" value={form.timeStart} onChange={(e) => setForm({ ...form, timeStart: e.target.value })} /></Field>
-              <Field label="Конец дня"><Input type="time" value={form.timeEnd} onChange={(e) => setForm({ ...form, timeEnd: e.target.value })} /></Field>
+              <Field label="Начало дня"><TimePicker value={form.timeStart} onChange={(v) => setForm({ ...form, timeStart: v })} /></Field>
+              <Field label="Конец дня"><TimePicker value={form.timeEnd} onChange={(v) => setForm({ ...form, timeEnd: v })} /></Field>
             </div>
             <Field label="Рабочие дни"><Select options={['Пн–Пт', 'Пн–Сб', 'Пн–Вс', 'Вт–Вс']} value={form.days} onChange={(e) => setForm({ ...form, days: e.target.value })} /></Field>
             <Field label="Ответственный"><Select options={['Алина Смирнова', 'Виктор Соколов', 'Игорь Лебедев', '— Не назначен —']} value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} /></Field>

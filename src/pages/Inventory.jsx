@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PageHead, Button, Card, Stat, Tabs, Badge, Table, Field, Input, Textarea, Select, Checkbox, Chips, Drawer } from '../components/ui.jsx'
+import { DatePicker } from '../components/DatePicker.jsx'
 import { IcPlus, IcExport, IcEdit, IcTrash } from '../components/icons.jsx'
 
 // ——— Мок-данные ————————————————————————————————————————————————————————
@@ -151,8 +152,6 @@ function GoodsTab() {
         />
         <div className="spacer" />
         <Button variant="ghost" size="sm"><IcExport size={16} /> Импорт</Button>
-        <Button variant="secondary" size="sm">Печать ценников</Button>
-        <Button variant="secondary" size="sm">Заказ поставщику</Button>
         <Button onClick={openNew}><IcPlus size={16} /> Товар</Button>
       </div>
 
@@ -434,11 +433,7 @@ function ReceiptsTab() {
         </Field>
         <div className="grid grid-2">
           <Field label="Дата прихода">
-            <Input
-              type="date"
-              value={form.date}
-              onChange={e => set('date', e.target.value)}
-            />
+            <DatePicker value={form.date} onChange={(v) => set('date', v)} />
           </Field>
           <Field label="Номер накладной">
             <Input
@@ -575,11 +570,7 @@ function WriteoffTab() {
         </Field>
         <div className="grid grid-2">
           <Field label="Дата">
-            <Input
-              type="date"
-              value={form.date}
-              onChange={e => set('date', e.target.value)}
-            />
+            <DatePicker value={form.date} onChange={(v) => set('date', v)} />
           </Field>
           <Field label="Склад">
             <Select
@@ -695,11 +686,7 @@ function TransferTab() {
             />
           </Field>
           <Field label="Дата перемещения">
-            <Input
-              type="date"
-              value={form.date}
-              onChange={e => set('date', e.target.value)}
-            />
+            <DatePicker value={form.date} onChange={(v) => set('date', v)} />
           </Field>
         </div>
         <div className="section-title">Позиции</div>
@@ -828,11 +815,7 @@ function InventoryTab() {
             />
           </Field>
           <Field label="Дата проведения">
-            <Input
-              type="date"
-              value={form.date}
-              onChange={e => set('date', e.target.value)}
-            />
+            <DatePicker value={form.date} onChange={(v) => set('date', v)} />
           </Field>
         </div>
         <Field label="Ответственный">

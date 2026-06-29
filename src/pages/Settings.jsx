@@ -3,6 +3,7 @@ import {
   PageHead, Button, Card, Badge, Table, Field, Input, Textarea,
   Select, Switch, Checkbox, Chips, Drawer,
 } from '../components/ui.jsx'
+import { TimePicker } from '../components/TimePicker.jsx'
 import { IcPlus, IcEdit, IcTrash } from '../components/icons.jsx'
 
 // ---- мок-данные ----
@@ -381,8 +382,8 @@ function SectionJournal() {
         <Field label="Шаг сетки времени">
           <Select options={['5 минут', '10 минут', '15 минут', '30 минут', '60 минут']} defaultValue="15 минут" />
         </Field>
-        <Field label="Начало рабочего дня"><Input type="time" defaultValue="09:00" /></Field>
-        <Field label="Конец рабочего дня"><Input type="time" defaultValue="21:00" /></Field>
+        <Field label="Начало рабочего дня"><TimePicker defaultValue="09:00" /></Field>
+        <Field label="Конец рабочего дня"><TimePicker defaultValue="21:00" /></Field>
         <Field label="Правило записи">
           <Select options={['Без подтверждения', 'Требует подтверждения администратором']} />
         </Field>

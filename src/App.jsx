@@ -16,7 +16,7 @@ import Profile from './pages/Profile.jsx'
 import Login from './pages/Login.jsx'
 import Onboarding from './pages/Onboarding.jsx'
 import SelectBranch from './pages/SelectBranch.jsx'
-import InventoryReports from './pages/InventoryReports.jsx'
+import InventoryReportView from './pages/InventoryReportView.jsx'
 
 export default function App() {
   return (
@@ -31,7 +31,9 @@ export default function App() {
         <Route path="branches" element={<SelectBranch />} />
         <Route path="clients" element={<Clients />} />
         <Route path="analytics" element={<Analytics />} />
-        <Route path="inventory-reports" element={<InventoryReports />} />
+        <Route path="analytics/:group" element={<Analytics />} />
+        <Route path="inventory-reports" element={<Navigate to="/business/inventory-reports/ostatki" replace />} />
+        <Route path="inventory-reports/:slug" element={<InventoryReportView />} />
       </Route>
 
       <Route path="/" element={<Layout />}>

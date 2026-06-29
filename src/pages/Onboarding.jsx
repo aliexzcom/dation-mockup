@@ -5,7 +5,7 @@ import { OtpInput } from '../components/OtpInput.jsx'
 import { formatUzbPhone, isUzbPhoneValid } from '../components/phone.js'
 
 const EMPTY = {
-  owner: '', phone: '',
+  owner: '', phone: '', password: '', password2: '',
   company: '', industry: 'Салон красоты / барбершоп',
   services: [], staffCount: '1–3', branchCount: '1',
   plan: 'Бизнес',
@@ -17,10 +17,10 @@ const SERVICE_OPTIONS = [
   'Макияж', 'SPA', 'Стоматология', 'Фитнес', 'Другое',
 ]
 
-// Регистрация по номеру + опрос о компании (само-регистрация, онбординг — Этап 4 ТЗ)
+// Регистрация компании: OTP-подтверждение номера → пароль → опрос → тариф
 export default function Onboarding() {
   const navigate = useNavigate()
-  const [step, setStep] = useState(1) // 1 — номер, 2 — код, 3 — опрос, 4 — тариф
+  const [step, setStep] = useState(1) // 1 — номер, 2 — код, 3 — пароль, 4 — опрос, 5 — тариф
   const [form, setForm] = useState(EMPTY)
   const [code, setCode] = useState('')
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -30,6 +30,7 @@ export default function Onboarding() {
   const phoneValid = isUzbPhoneValid(form.phone)
   const step1Valid = form.owner.trim() && phoneValid
   const codeValid = code.length === 4
+  const passValid = form.password.length >= 6 && form.password === form.password2
   const surveyValid = form.company.trim() && form.services.length > 0
 
   const finish = () => navigate('/business/branches')
@@ -42,12 +43,12 @@ export default function Onboarding() {
           <span style={{ fontWeight: 700, fontSize: 22 }}>Dation</span>
         </div>
         <p className="muted" style={{ textAlign: 'center', marginTop: 0, marginBottom: 20 }}>
-          Регистрация — шаг {step} из 4
+          Регистрация компании — шаг {step} из 5
         </p>
 
         {/* индикатор шагов */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
-          {[1, 2, 3, 4].map((n) => (
+          {[1, 2, 3, 4, 5].map((n) => (
             <div key={n} style={{ flex: 1, height: 4, borderRadius: 2, background: n <= step ? 'var(--violet)' : 'var(--border)' }} />
           ))}
         </div>
@@ -84,8 +85,31 @@ export default function Onboarding() {
           </>
         )}
 
-        {/* Шаг 3 — опрос о компании */}
+        {/* Шаг 3 — создание пароля */}
         {step === 3 && (
+          <>
+            <p className="muted" style={{ textAlign: 'center', marginTop: 0, marginBottom: 18 }}>
+              Придумайте пароль для входа в систему
+            </p>
+            <Field label="Пароль">
+              <Input type="password" placeholder="Минимум 6 символов" value={form.password} onChange={(e) => set('password', e.target.value)} />
+            </Field>
+            <Field label="Повторите пароль">
+              <Input type="password" placeholder="Повторите пароль" value={form.password2} onChange={(e) => set('password2', e.target.value)} />
+            </Field>
+            {form.password2 && form.password !== form.password2 && (
+              <p className="small" style={{ color: 'var(--red)', marginTop: -4 }}>Пароли не совпадают</p>
+            )}
+            <p className="small muted">Дальше вход будет по номеру телефона и этому паролю.</p>
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <Button variant="secondary" onClick={() => setStep(2)}>Назад</Button>
+              <Button className="block" onClick={() => setStep(4)} disabled={!passValid}>Продолжить</Button>
+            </div>
+          </>
+        )}
+
+        {/* Шаг 4 — опрос о компании */}
+        {step === 4 && (
           <>
             <p className="muted" style={{ textAlign: 'center', marginTop: 0, marginBottom: 20 }}>
               Расскажите о компании — это поможет настроить рабочее пространство.
@@ -121,14 +145,14 @@ export default function Onboarding() {
             </div>
 
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <Button variant="secondary" onClick={() => setStep(2)}>Назад</Button>
-              <Button className="block" onClick={() => setStep(4)} disabled={!surveyValid}>Далее</Button>
+              <Button variant="secondary" onClick={() => setStep(3)}>Назад</Button>
+              <Button className="block" onClick={() => setStep(5)} disabled={!surveyValid}>Далее</Button>
             </div>
           </>
         )}
 
-        {/* Шаг 4 — тариф */}
-        {step === 4 && (
+        {/* Шаг 5 — тариф */}
+        {step === 5 && (
           <>
             <div className="section-title" style={{ marginTop: 0 }}>Выберите тариф</div>
             <div className="grid" style={{ gap: 10 }}>
@@ -154,11 +178,11 @@ export default function Onboarding() {
             </div>
 
             <div className="note small" style={{ marginTop: 16 }}>
-              После регистрации вы попадёте в рабочее пространство компании. Подключение Telegram-бота и настройка — в разделе «Telegram Mini App».
+              После регистрации вы попадёте в рабочее пространство компании. Сотрудников добавите в разделе «Сотрудники» — каждый входит по номеру и паролю.
             </div>
 
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              <Button variant="secondary" onClick={() => setStep(3)}>Назад</Button>
+              <Button variant="secondary" onClick={() => setStep(4)}>Назад</Button>
               <Button className="block" onClick={finish}>Создать аккаунт</Button>
             </div>
           </>

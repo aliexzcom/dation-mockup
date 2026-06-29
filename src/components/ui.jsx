@@ -24,9 +24,9 @@ export function PageHead({ crumbs, title, sub, actions }) {
 }
 
 // ---------- Карточка ----------
-export function Card({ title, actions, children, pad = true, className = '' }) {
+export function Card({ title, actions, children, pad = true, className = '', style }) {
   return (
-    <div className={`card ${className}`}>
+    <div className={`card ${className}`} style={style}>
       {title && (
         <div className="card-head">
           <h3>{title}</h3>
@@ -63,6 +63,17 @@ export function Tabs({ tabs, active, onChange }) {
 export function useTabs(list) {
   const [active, setActive] = useState(list[0])
   return [active, setActive]
+}
+
+// ---- Сегментированный переключатель (кнопка-сегменты) ----
+export function Segmented({ items, active, onChange }) {
+  return (
+    <div className="segmented">
+      {items.map((it) => (
+        <button key={it} type="button" className={`seg-btn ${active === it ? 'active' : ''}`} onClick={() => onChange(it)}>{it}</button>
+      ))}
+    </div>
+  )
 }
 
 // ---------- Бейдж ----------
@@ -147,8 +158,8 @@ export function Checkbox({ label, checked, onChange }) {
 }
 
 // ---------- Поиск ----------
-export function SearchInput({ placeholder = 'Поиск' }) {
-  return <div className="search-sm"><IcSearch size={16} /><input placeholder={placeholder} /></div>
+export function SearchInput({ placeholder = 'Поиск', value, onChange, style }) {
+  return <div className="search-sm" style={style}><IcSearch size={16} /><input placeholder={placeholder} value={value} onChange={onChange} /></div>
 }
 
 // ---------- Чипы-фильтры ----------

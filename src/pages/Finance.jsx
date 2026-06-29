@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { PageHead, Button, Card, Stat, Tabs, Badge, Table, Field, Input, Select, Chips, Drawer, KV } from '../components/ui.jsx'
+import { PageHead, Button, Card, Stat, Badge, Table, Field, Input, Select, Chips, Drawer, KV } from '../components/ui.jsx'
+import { DatePicker } from '../components/DatePicker.jsx'
 import { IcPlus, IcExport } from '../components/icons.jsx'
 
 // ─── Мок-данные ───────────────────────────────────────────────────────────────
@@ -16,13 +17,6 @@ const TX_TYPES = {
 
 const PAY_METHODS = ['Наличные', 'Карта', 'Перевод', 'Онлайн (Mini App)', 'Смешанная']
 
-
-const SALARY_ROWS = [
-  { name: 'Анна Морозова',   role: 'Парикмахер',    services: 55920, goods: 0,    base: 25000, fine: 0,   bonus: 3000, advance: 10000, total: 73920, topay: 63920, status: 'paid' },
-  { name: 'Игорь Лебедев',   role: 'Барбер',        services: 42360, goods: 0,    base: 20000, fine: 0,   bonus: 0,    advance: 5000,  total: 57360, topay: 52360, status: 'pending' },
-  { name: 'Светлана Котова',  role: 'Маникюр',       services: 29340, goods: 1200, base: 20000, fine: 500, bonus: 1000, advance: 0,     total: 51040, topay: 51040, status: 'pending' },
-  { name: 'Дмитрий Орлов',   role: 'Косметолог',    services: 37380, goods: 0,    base: 22000, fine: 0,   bonus: 2000, advance: 7000,  total: 61380, topay: 54380, status: 'accrued' },
-]
 
 function fmt(n) {
   return n.toLocaleString('ru-RU') + ' ₽'
@@ -48,20 +42,15 @@ const EMPTY_TX = { dt: '24.06.2026', desc: '', method: 'Наличные', amoun
 // ─── Основной компонент ────────────────────────────────────────────────────────
 
 export default function Finance() {
-  const [tab, setTab] = useState('Транзакции')
-
   return (
     <>
       <PageHead
         crumbs="Финансы"
         title="Финансы"
-        sub="Учёт транзакций, зарплата сотрудников и финансовая аналитика."
+        sub="Учёт финансовых транзакций: доходы, расходы и оплата визитов."
       />
 
-      <Tabs tabs={['Транзакции', 'Зарплата']} active={tab} onChange={setTab} />
-
-      {tab === 'Транзакции' && <TransactionsTab />}
-      {tab === 'Зарплата' && <SalaryTab />}
+      <TransactionsTab />
     </>
   )
 }
@@ -71,6 +60,8 @@ export default function Finance() {
 function TransactionsTab() {
   const [typeFilter, setTypeFilter] = useState('Все')
   const [methodFilter, setMethodFilter] = useState('Все способы')
+  const [from, setFrom] = useState('2026-06-01')
+  const [to, setTo] = useState('2026-06-30')
   const [payDrawer, setPayDrawer] = useState(false)
   // txDrawer: null | 'income' | 'expense'
   const [txDrawer, setTxDrawer] = useState(null)
@@ -131,14 +122,19 @@ function TransactionsTab() {
           active={typeFilter}
           onChange={setTypeFilter}
         />
-        <div className="spacer" />
+      </div>
+
+      <div className="toolbar">
+        <span className="small muted">с:</span>
+        <DatePicker value={from} onChange={setFrom} style={{ width: 150 }} />
+        <span className="small muted">по:</span>
+        <DatePicker value={to} onChange={setTo} style={{ width: 150 }} />
         <Select
           options={['Все способы', ...PAY_METHODS]}
           value={methodFilter}
           onChange={(e) => setMethodFilter(e.target.value)}
-          style={{ width: 180 }}
+          style={{ width: 170 }}
         />
-        <Select options={['Сегодня', 'Эта неделя', 'Этот месяц', 'Произвольный']} style={{ width: 160 }} />
         <Select options={['Все сотрудники', 'А. Морозова', 'И. Лебедев', 'С. Котова', 'Д. Орлов']} style={{ width: 170 }} />
       </div>
 
@@ -323,143 +319,3 @@ function PaymentDrawer({ open, onClose }) {
   )
 }
 
-// ─── Вкладка «Зарплата» ───────────────────────────────────────────────────────
-
-function SalaryTab() {
-  const [period, setPeriod] = useState('Июнь 2026')
-  const [payslipDrawer, setPayslipDrawer] = useState(false)
-  const [selectedStaff, setSelectedStaff] = useState(null)
-
-  const totalAccrued = SALARY_ROWS.reduce((s, r) => s + r.total, 0)
-  const totalPaid = SALARY_ROWS.filter((r) => r.status === 'paid').reduce((s, r) => s + r.total, 0)
-  const totalPending = SALARY_ROWS.filter((r) => r.status !== 'paid').reduce((s, r) => s + r.topay, 0)
-
-  function openPayslip(row) {
-    setSelectedStaff(row)
-    setPayslipDrawer(true)
-  }
-
-  return (
-    <>
-      <div className="toolbar" style={{ marginBottom: 0 }}>
-        <Field label="Период">
-          <Select
-            options={['Июнь 2026', 'Май 2026', 'Апрель 2026', 'Март 2026']}
-            value={period}
-            onChange={(e) => setPeriod(e.target.value)}
-            style={{ width: 160 }}
-          />
-        </Field>
-        <div className="spacer" />
-        <Button variant="ghost"><IcExport size={16} /> Экспорт</Button>
-        <Button variant="secondary">Рассчитать</Button>
-        <Button variant="secondary">Закрыть период</Button>
-        <Button>Выплатить все</Button>
-      </div>
-
-      <div className="grid grid-3" style={{ marginBottom: 16, marginTop: 16 }}>
-        <Stat label="Начислено" value={fmt(totalAccrued)} />
-        <Stat label="Выплачено" value={fmt(totalPaid)} delta="+2 чел." dir="up" />
-        <Stat label="К выплате" value={fmt(totalPending)} />
-      </div>
-
-      <Card pad={false}>
-        <Table
-          columns={[
-            { label: 'Сотрудник' },
-            { label: 'За услуги', num: true },
-            { label: 'За товары', num: true },
-            { label: 'Оклад', num: true },
-            { label: 'Штрафы', num: true },
-            { label: 'Бонусы', num: true },
-            { label: 'Авансы', num: true },
-            { label: 'Итого начислено', num: true },
-            { label: 'К выплате', num: true },
-            { label: 'Статус' },
-            { label: '' },
-          ]}
-          rows={SALARY_ROWS}
-          renderRow={(r, i) => (
-            <tr key={i}>
-              <td>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{r.name}</div>
-                  <div className="small muted">{r.role}</div>
-                </div>
-              </td>
-              <td className="num">{fmt(r.services)}</td>
-              <td className="num">{r.goods ? fmt(r.goods) : '—'}</td>
-              <td className="num">{fmt(r.base)}</td>
-              <td className="num" style={{ color: r.fine > 0 ? 'var(--red, #DC2626)' : undefined }}>
-                {r.fine > 0 ? `−${fmt(r.fine)}` : '—'}
-              </td>
-              <td className="num" style={{ color: r.bonus > 0 ? 'var(--green, #16A34A)' : undefined }}>
-                {r.bonus > 0 ? `+${fmt(r.bonus)}` : '—'}
-              </td>
-              <td className="num">{r.advance > 0 ? `−${fmt(r.advance)}` : '—'}</td>
-              <td className="num" style={{ fontWeight: 700 }}>{fmt(r.total)}</td>
-              <td className="num" style={{ fontWeight: 700 }}>{fmt(r.topay)}</td>
-              <td>
-                <Badge color={
-                  r.status === 'paid' ? 'green' :
-                  r.status === 'accrued' ? 'blue' : 'amber'
-                }>
-                  {r.status === 'paid' ? 'Выплачено' : r.status === 'accrued' ? 'Начислено' : 'К выплате'}
-                </Badge>
-              </td>
-              <td>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <Button size="sm" variant="secondary" onClick={() => openPayslip(r)}>Лист</Button>
-                  {r.status !== 'paid' && <Button size="sm" onClick={() => {}}>Выплатить</Button>}
-                </div>
-              </td>
-            </tr>
-          )}
-        />
-      </Card>
-
-      {/* Drawer: Расчётный лист */}
-      <Drawer
-        open={payslipDrawer}
-        onClose={() => setPayslipDrawer(false)}
-        title={selectedStaff ? `Расчётный лист — ${selectedStaff.name}` : 'Расчётный лист'}
-        footer={<>
-          <Button variant="ghost"><IcExport size={14} /> Печать</Button>
-          {selectedStaff?.status !== 'paid' && <Button>Выплатить</Button>}
-        </>}
-      >
-        {selectedStaff && (
-          <>
-            <div className="section-title">Период: {period}</div>
-            <KV items={[
-              ['Сотрудник', selectedStaff.name],
-              ['Должность', selectedStaff.role],
-            ]} />
-            <div className="divider" />
-            <KV items={[
-              ['Оклад', fmt(selectedStaff.base)],
-              ['За услуги (30%)', fmt(selectedStaff.services)],
-              ['За товары (5%)', selectedStaff.goods ? fmt(selectedStaff.goods) : '0 ₽'],
-              ['Бонусы', selectedStaff.bonus ? `+${fmt(selectedStaff.bonus)}` : '0 ₽'],
-              ['Штрафы', selectedStaff.fine ? `−${fmt(selectedStaff.fine)}` : '0 ₽'],
-              ['Аванс', selectedStaff.advance ? `−${fmt(selectedStaff.advance)}` : '0 ₽'],
-            ]} />
-            <div className="divider" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, padding: '4px 0' }}>
-              <span>Итого начислено</span>
-              <span>{fmt(selectedStaff.total)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 16, padding: '4px 0', color: 'var(--accent, #7C3AED)' }}>
-              <span>К выплате</span>
-              <span>{fmt(selectedStaff.topay)}</span>
-            </div>
-            <div className="divider" />
-            <div className="note small">
-              Расчётный лист сформирован автоматически по схеме начисления. {period}.
-            </div>
-          </>
-        )}
-      </Drawer>
-    </>
-  )
-}

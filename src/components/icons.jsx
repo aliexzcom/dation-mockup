@@ -28,6 +28,9 @@ export const IcExport = (p) => <S {...p}><path d="M12 3v12M8 7l4-4 4 4"/><path d
 export const IcEdit = (p) => <S {...p}><path d="M4 20h4L20 8l-4-4L4 16v4Z"/><path d="M14 6l4 4"/></S>
 export const IcTrash = (p) => <S {...p}><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></S>
 export const IcLogout = (p) => <S {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></S>
+export const IcClock = (p) => <S {...p}><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></S>
+export const IcMoon = (p) => <S {...p}><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></S>
+export const IcSun = (p) => <S {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></S>
 
 export const NAV_ICONS = {
   journal: IcCalendar, miniapp: IcTelegram, clients: IcUsers, services: IcScissors,
