@@ -11,6 +11,7 @@ import Finance from './pages/Finance.jsx'
 import Notifications from './pages/Notifications.jsx'
 import Analytics from './pages/Analytics.jsx'
 import Settings from './pages/Settings.jsx'
+import Devices from './pages/Devices.jsx'
 import Billing from './pages/Billing.jsx'
 import Profile from './pages/Profile.jsx'
 import Login from './pages/Login.jsx'
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="notifications/broadcasts" element={<Notifications view="broadcasts" />} />
         <Route path="notifications/settings" element={<Notifications view="settings" />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="devices" element={<Devices />} />
         <Route path="billing" element={<Billing />} />
         <Route path="profile" element={<Profile />} />
         <Route path="*" element={<Navigate to="/journal" replace />} />

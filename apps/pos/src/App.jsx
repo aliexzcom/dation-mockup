@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
-import Login from './screens/Login.jsx'
+import PairDevice from './screens/PairDevice.jsx'
 import StaffSelect from './screens/StaffSelect.jsx'
 import Journal from './screens/Journal.jsx'
 import Settings from './screens/Settings.jsx'
@@ -24,7 +24,7 @@ export default function App() {
 
   // Обёртка рабочих экранов: проверка входа и выбранного профиля
   const work = (active, title, node, actions) => {
-    if (!authed) return <Navigate to="/login" replace />
+    if (!authed) return <Navigate to="/pair" replace />
     if (!employee) return <Navigate to="/staff" replace />
     return (
       <Layout active={active} title={title} employee={employee} theme={theme}
@@ -36,11 +36,11 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={<Login theme={theme} onAuth={() => setAuthed(true)} />} />
+      <Route path="/pair" element={<PairDevice theme={theme} onAuth={() => setAuthed(true)} />} />
       <Route path="/staff" element={
         authed
           ? <StaffSelect theme={theme} onPick={setEmployee} onLogout={logout} branch={branch} onChangeBranch={setBranch} />
-          : <Navigate to="/login" replace />
+          : <Navigate to="/pair" replace />
       } />
       <Route path="/journal" element={work('journal', 'Журнал записей',
         <Journal employee={employee} creating={creating} setCreating={setCreating} />,

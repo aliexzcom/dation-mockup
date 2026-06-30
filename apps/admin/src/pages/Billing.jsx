@@ -180,7 +180,7 @@ export default function Billing() {
               borderRadius: 10,
               marginBottom: 10,
               cursor: 'pointer',
-              background: plan.isCurrent ? 'var(--violet-soft, #f5f3ff)' : '#fff',
+              background: plan.isCurrent ? 'var(--violet-soft, #EEF2FE)' : '#fff',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -16,10 +16,10 @@ export const CLIENT = {
 
 // Рекламные обложки на главной
 export const BANNERS = [
-  { id: 'p1', badge: 'Акция', title: 'Окрашивание −20%', sub: 'Весь июль на сложное окрашивание', grad: 'linear-gradient(135deg,#7C3AED,#A855F7)' },
-  { id: 'p2', badge: 'Подарок', title: 'Маникюр + педикюр', sub: 'Снятие покрытия бесплатно', grad: 'linear-gradient(135deg,#6D28D9,#DB2777)' },
-  { id: 'p3', badge: 'Новинка', title: 'Ламинирование ресниц', sub: 'Эффект на 6–8 недель', grad: 'linear-gradient(135deg,#4F46E5,#7C3AED)' },
-  { id: 'p4', badge: 'Приведи друга', title: '−15% вам обоим', sub: 'За каждого приглашённого', grad: 'linear-gradient(135deg,#9333EA,#6366F1)' },
+  { id: 'p1', badge: 'Акция', title: 'Окрашивание −20%', sub: 'Весь июль на сложное окрашивание', grad: 'linear-gradient(135deg,#3B65F3,#5B8DEF)' },
+  { id: 'p2', badge: 'Подарок', title: 'Маникюр + педикюр', sub: 'Снятие покрытия бесплатно', grad: 'linear-gradient(135deg,#2C53E6,#DB2777)' },
+  { id: 'p3', badge: 'Новинка', title: 'Ламинирование ресниц', sub: 'Эффект на 6–8 недель', grad: 'linear-gradient(135deg,#2C53E6,#3B65F3)' },
+  { id: 'p4', badge: 'Приведи друга', title: '−15% вам обоим', sub: 'За каждого приглашённого', grad: 'linear-gradient(135deg,#2C53E6,#3B65F3)' },
 ]
 
 export const BRANCHES = [
@@ -95,6 +95,26 @@ export const MY_BOOKINGS = [
 ]
 
 export const PREPAY_AMOUNT = 50000 // фиксированный депозит
+
+// Отзывы клиентов
+export const REVIEWS = [
+  { id: 'r1', name: 'Камила Ю.', rating: 5, date: '28 июня', text: 'Лучший мастер! Стрижка именно как хотела, приду ещё.' },
+  { id: 'r2', name: 'Дилноза А.', rating: 5, date: '25 июня', text: 'Маникюр держится третью неделю, очень аккуратно.' },
+  { id: 'r3', name: 'Азиза Р.', rating: 4, date: '21 июня', text: 'Окрашивание получилось мягким и ровным, спасибо!' },
+  { id: 'r4', name: 'Нодира К.', rating: 5, date: '18 июня', text: 'Уютно и чисто, мастера — настоящие профессионалы.' },
+  { id: 'r5', name: 'Сабина М.', rating: 5, date: '15 июня', text: 'Ламинирование ресниц — эффект просто вау, держится отлично.' },
+  { id: 'r6', name: 'Гульнара Т.', rating: 4, date: '12 июня', text: 'Записалась онлайн за минуту, мастер приняла вовремя.' },
+  { id: 'r7', name: 'Мадина Х.', rating: 5, date: '8 июня', text: 'Брови привели в идеальную форму, очень довольна.' },
+  { id: 'r8', name: 'Лола И.', rating: 5, date: '3 июня', text: 'Приятные цены и внимательное отношение. Рекомендую!' },
+]
+
+// Фото работ салона (в реальном приложении — загруженные фото)
+export const WORK_PHOTOS = [
+  'https://picsum.photos/seed/dation-a/500',
+  'https://picsum.photos/seed/dation-b/500',
+  'https://picsum.photos/seed/dation-c/500',
+  'https://picsum.photos/seed/dation-d/500',
+]
 
 // ---------- Хелперы ----------
 export const fmtPrice = (n) => n.toLocaleString('ru-RU') + ' сум'

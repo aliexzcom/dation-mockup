@@ -52,7 +52,7 @@ export default function BusinessLayout() {
     <div className="app">
       <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-brand">
-          <div className="brand-mark">D</div>
+          <div className="brand-mark"><img src="/logo-mark.svg" alt="Dation" /></div>
           <span className="brand-text" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             Dation <span className="badge" style={{ fontSize: 10 }}>Бизнес</span>
           </span>

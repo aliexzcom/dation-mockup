@@ -1,5 +1,4 @@
-import { useNavigate } from 'react-router-dom'
-import { IcBack, IcStar, IcCheck, IcMoon, IcSun, IcHome, IcCalCheck } from '../icons.jsx'
+import { IcBack, IcStar, IcCheck, IcMoon, IcSun, IcMenu } from '../icons.jsx'
 
 // Переключатель темы (иконка в шапке)
 export function ThemeBtn({ theme }) {
@@ -10,14 +9,17 @@ export function ThemeBtn({ theme }) {
   )
 }
 
-// Рамка «телефона»: шапка (Telegram header) + прокручиваемое тело + опц. нижняя кнопка/таб-бар
-export function Frame({ title, subtitle, onBack, right, children, footer, tabbar, scrollKey }) {
+// Рамка «телефона»: шапка (Telegram header) + прокручиваемое тело + опц. нижняя кнопка.
+// Слева: кнопка «назад» (onBack), либо бургер-меню (onMenu), либо логотип.
+export function Frame({ title, subtitle, onBack, onMenu, right, children, footer, scrollKey }) {
   return (
     <div className="phone">
       <div className="tbar">
         {onBack
           ? <button className="tbar-back" onClick={onBack} aria-label="Назад"><IcBack /></button>
-          : <div className="tbar-logo">L</div>}
+          : onMenu
+            ? <button className="tbar-back" onClick={onMenu} aria-label="Меню"><IcMenu /></button>
+            : <div className="tbar-logo"><img src="/logo-mark.svg" alt="Dation" /></div>}
         <div className="tbar-title">
           <div className="t">{title}</div>
           {subtitle && <div className="s">{subtitle}</div>}
@@ -28,22 +30,6 @@ export function Frame({ title, subtitle, onBack, right, children, footer, tabbar
         {children}
       </div>
       {footer && <div className="mainbtn">{footer}</div>}
-      {tabbar}
-    </div>
-  )
-}
-
-// Нижняя навигация: Главная (домик) + Мои записи
-export function TabBar({ active }) {
-  const navigate = useNavigate()
-  return (
-    <div className="tabbar">
-      <button className={'tabbar-item' + (active === 'home' ? ' active' : '')} onClick={() => navigate('/')}>
-        <IcHome size={22} /><span>Главная</span>
-      </button>
-      <button className={'tabbar-item' + (active === 'my' ? ' active' : '')} onClick={() => navigate('/my')}>
-        <IcCalCheck size={22} /><span>Мои записи</span>
-      </button>
     </div>
   )
 }

@@ -31,6 +31,14 @@ const INITIAL_BANNERS = [
   { id: 'p4', badge: 'Приведи друга', title: '−15% вам обоим', sub: 'За каждого приглашённого', enabled: false },
 ]
 
+// Фото работ — показываются на главном экране Mini App вперемешку с отзывами
+const INITIAL_WORK_PHOTOS = [
+  { id: 'w1', url: 'https://picsum.photos/seed/dation-a/500', enabled: true },
+  { id: 'w2', url: 'https://picsum.photos/seed/dation-b/500', enabled: true },
+  { id: 'w3', url: 'https://picsum.photos/seed/dation-c/500', enabled: true },
+  { id: 'w4', url: 'https://picsum.photos/seed/dation-d/500', enabled: false },
+]
+
 // Сопоставление маршрута раздела и подписи вкладки
 const VIEW_TABS = { settings: 'Настройки', preview: 'Предпросмотр записи', bot: 'Подключение бота' }
 
@@ -74,6 +82,7 @@ function SettingsTab() {
   const [services, setServices] = useState(SERVICES)
   const [staff, setStaff] = useState(STAFF)
   const [banners, setBanners] = useState(INITIAL_BANNERS)
+  const [photos, setPhotos] = useState(INITIAL_WORK_PHOTOS)
   const [featured, setFeatured] = useState(['s1', 's5', 's9'])
   const [requireDeposit, setRequireDeposit] = useState(true)
   const [depositType, setDepositType] = useState('Фиксированная сумма')
@@ -101,6 +110,10 @@ function SettingsTab() {
   const updateBanner = (id, field, val) => setBanners(b => b.map(x => x.id === id ? { ...x, [field]: val } : x))
   const removeBanner = (id) => setBanners(b => b.filter(x => x.id !== id))
   const addBanner = () => setBanners(b => [...b, { id: 'p' + Date.now(), badge: 'Акция', title: '', sub: '', enabled: true }])
+  const togglePhoto = (id) => setPhotos(p => p.map(x => x.id === id ? { ...x, enabled: !x.enabled } : x))
+  const updatePhoto = (id, url) => setPhotos(p => p.map(x => x.id === id ? { ...x, url } : x))
+  const removePhoto = (id) => setPhotos(p => p.filter(x => x.id !== id))
+  const addPhoto = () => setPhotos(p => [...p, { id: 'w' + Date.now(), url: '', enabled: true }])
   const toggleFeatured = (id) => setFeatured(f => f.includes(id) ? f.filter(x => x !== id) : [...f, id])
 
   return (
@@ -127,6 +140,33 @@ function SettingsTab() {
           </div>
         ))}
         {banners.length === 0 && <div className="small muted">Афиш нет. Добавьте первую.</div>}
+      </Card>
+
+      {/* Фото работ */}
+      <Card
+        title="Фото работ на главной"
+        actions={<Button size="sm" variant="ghost" onClick={addPhoto}><IcPlus size={14} /> Добавить фото</Button>}
+      >
+        <div className="note small" style={{ marginBottom: 12 }}>
+          Фото работ показываются на главном экране Mini App в блоке «Отзывы и работы» вперемешку с отзывами.
+        </div>
+        {photos.map(ph => (
+          <div
+            key={ph.id}
+            style={{ display: 'grid', gridTemplateColumns: '56px 1fr auto auto', gap: 10, alignItems: 'center', marginBottom: 8 }}
+          >
+            <div style={{
+              width: 56, height: 56, borderRadius: 10, border: '1px solid var(--border)', flexShrink: 0,
+              backgroundColor: 'var(--bg-soft, #F1F2F5)',
+              backgroundImage: ph.url ? `url(${ph.url})` : 'none',
+              backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
+            }} />
+            <Input placeholder="URL фото" value={ph.url} onChange={e => updatePhoto(ph.id, e.target.value)} />
+            <Switch on={ph.enabled} onClick={() => togglePhoto(ph.id)} />
+            <Button size="sm" variant="ghost" onClick={() => removePhoto(ph.id)} title="Удалить"><IcTrash size={14} /></Button>
+          </div>
+        ))}
+        {photos.length === 0 && <div className="small muted">Фото нет. Добавьте первое.</div>}
       </Card>
 
       {/* Услуги и сотрудники */}
@@ -282,10 +322,10 @@ function SettingsTab() {
             <Input placeholder="https://example.com/cover.jpg" />
           </Field>
           <Field label="Основной цвет (hex)">
-            <Input placeholder="#7C3AED" defaultValue="#7C3AED" />
+            <Input placeholder="#3B65F3" defaultValue="#3B65F3" />
           </Field>
           <Field label="Цвет кнопок">
-            <Input placeholder="#6D28D9" defaultValue="#6D28D9" />
+            <Input placeholder="#2C53E6" defaultValue="#2C53E6" />
           </Field>
         </div>
         <div className="divider" />

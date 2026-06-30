@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { IcCalendar, IcUsers, IcStaff, IcMoney, IcBell, IcGear, IcCard, IcChevron, IcLogout } from './icons.jsx'
+import { IcCalendar, IcUsers, IcStaff, IcMoney, IcBell, IcGear, IcCard, IcChevron, IcLogout, IcDevice } from './icons.jsx'
 import { ThemeToggle } from './ThemeToggle.jsx'
 
 // Разделы левого меню. Часть пунктов — раскрывающиеся группы (аккордеон),
@@ -18,6 +18,7 @@ const NAV = [
     { to: '/notifications/broadcasts', label: 'Рассылки' },
     { to: '/notifications/settings', label: 'Настройки' },
   ] },
+  { to: '/devices', label: 'Устройства', Ico: IcDevice },
   { to: '/settings', label: 'Настройки', Ico: IcGear },
   { to: '/billing', label: 'Тарифы и оплата', Ico: IcCard },
 ]
@@ -34,11 +35,21 @@ export default function Layout() {
   const [openMenu, setOpenMenu] = useState(activeGroup)
   const toggle = (key) => setOpenMenu((o) => (o === key ? null : key))
 
+  // Профиль-меню в подвале сайдбара
+  const [profileOpen, setProfileOpen] = useState(false)
+  const footRef = useRef(null)
+  useEffect(() => {
+    if (!profileOpen) return
+    const onDoc = (e) => { if (footRef.current && !footRef.current.contains(e.target)) setProfileOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [profileOpen])
+
   return (
     <div className="app">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="brand-mark">D</div>
+          <div className="brand-mark"><img src="/logo-mark.svg" alt="Dation" /></div>
           <span className="brand-text">Dation</span>
         </div>
         <div style={{ padding: '6px 8px 0' }}>
@@ -91,14 +102,31 @@ export default function Layout() {
             )
           })}
         </nav>
-        <div className="sidebar-foot" style={{ display: 'flex', gap: 6, justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap' }}>
-          <button className="icon-btn" title="Профиль" onClick={() => navigate('/profile')}>
-            <span className="avatar-sm" style={{ width: 28, height: 28, fontSize: 11 }}>ОВ</span>
+        <div className="sidebar-foot" ref={footRef} style={{ position: 'relative' }}>
+          {profileOpen && (
+            <div className="profile-menu">
+              <button className="nav-item" style={{ width: '100%', border: 0, background: 'transparent' }}
+                onClick={() => { setProfileOpen(false); navigate('/profile') }}>
+                <span className="nav-ico"><IcStaff size={18} /></span>
+                <span className="nav-label">Профиль</span>
+              </button>
+              <ThemeToggle />
+              <div className="profile-menu-sep" />
+              <button className="nav-item" style={{ width: '100%', border: 0, background: 'transparent', color: 'var(--red, #DC2626)' }}
+                onClick={() => { setProfileOpen(false); navigate('/login') }}>
+                <span className="nav-ico"><IcLogout size={18} /></span>
+                <span className="nav-label">Выйти из аккаунта</span>
+              </button>
+            </div>
+          )}
+          <button className="profile-widget" onClick={() => setProfileOpen((o) => !o)}>
+            <span className="avatar-sm" style={{ width: 36, height: 36, fontSize: 13 }}>ОВ</span>
+            <span className="pw-meta">
+              <span className="pw-name">Олег Владимиров</span>
+              <span className="pw-role">Владелец</span>
+            </span>
+            <span className="pw-chev"><IcChevron size={16} /></span>
           </button>
-          <button className="icon-btn" title="Уведомления">
-            <IcBell size={18} /><span className="dot" />
-          </button>
-          <ThemeToggle compact />
         </div>
       </aside>
 

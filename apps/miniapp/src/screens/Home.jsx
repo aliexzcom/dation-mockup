@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Frame, TabBar, ThemeBtn } from '../components/ui.jsx'
-import { IcChevR, IcPlusCal, IcBack } from '../icons.jsx'
-import { COMPANY, CLIENT, BANNERS, CATEGORIES, fmtPrice, fmtDur } from '../data.js'
+import { Frame, ThemeBtn } from '../components/ui.jsx'
+import { IcChevR, IcPlusCal, IcBack, IcStar } from '../icons.jsx'
+import { COMPANY, CLIENT, BANNERS, REVIEWS, WORK_PHOTOS } from '../data.js'
 
-// Несколько популярных услуг для быстрого старта
-const POPULAR = [
-  CATEGORIES[0].services[0],
-  CATEGORIES[1].services[0],
-  CATEGORIES[2].services[1],
-]
+// «Косичка»: 2 колонки, отзыв и фото в шахматном порядке
+const BRAID = Array.from({ length: 8 }, (_, i) => {
+  const row = Math.floor(i / 2)
+  const col = i % 2
+  return (row + col) % 2 === 0
+    ? { type: 'review', ...REVIEWS[row % REVIEWS.length] }
+    : { type: 'photo', src: WORK_PHOTOS[row % WORK_PHOTOS.length] }
+})
 
 export default function Home({ theme }) {
   const navigate = useNavigate()
@@ -73,8 +75,8 @@ export default function Home({ theme }) {
     <Frame
       title={COMPANY.name}
       subtitle={COMPANY.about}
+      onMenu={() => navigate('/menu')}
       right={<ThemeBtn theme={theme} />}
-      tabbar={<TabBar active="home" />}
     >
       <div className="greet">
         <div className="hi">Здравствуйте, {CLIENT.name.split(' ')[0]}</div>
@@ -113,16 +115,25 @@ export default function Home({ theme }) {
       </div>
 
       <div className="pad" style={{ paddingTop: 8 }}>
-        <div className="sec-title">Популярные услуги</div>
-        {POPULAR.map((s) => (
-          <button key={s.id} className="pick" onClick={() => navigate('/booking')}>
-            <div className="pick-body">
-              <div className="pick-title">{s.name}</div>
-              <div className="pick-meta">{fmtPrice(s.price)} · {fmtDur(s.dur)}</div>
+        <div className="sec-title">Отзывы и работы</div>
+        <div className="braid">
+          {BRAID.map((cell, i) => (cell.type === 'review' ? (
+            <div key={i} className="braid-cell review-cell">
+              <div className="rc-stars">
+                {Array.from({ length: 5 }).map((_, j) => (
+                  <IcStar key={j} size={13} style={{ opacity: j < cell.rating ? 1 : 0.22 }} />
+                ))}
+              </div>
+              <div className="rc-text">{cell.text}</div>
+              <div className="rc-name">{cell.name}</div>
             </div>
-            <IcChevR size={18} style={{ color: 'var(--text-faint)' }} />
-          </button>
-        ))}
+          ) : (
+            <div key={i} className="braid-cell photo-cell" style={{ backgroundImage: `url(${cell.src})` }} role="img" aria-label="Фото работы" />
+          )))}
+        </div>
+        <button className="btn secondary" style={{ width: '100%', marginTop: 12 }} onClick={() => navigate('/reviews')}>
+          Читать все отзывы <IcChevR size={16} />
+        </button>
       </div>
     </Frame>
   )

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Frame, TabBar, Ava, ThemeBtn } from '../components/ui.jsx'
+import { Frame, Ava, ThemeBtn } from '../components/ui.jsx'
 import { IcCalCheck, IcPin, IcUser, IcClock } from '../icons.jsx'
 import { CLIENT, MY_BOOKINGS, fmtPrice, fmtDur, fmtDateFull } from '../data.js'
 
@@ -16,10 +16,10 @@ export default function MyBookings({ theme }) {
 
   return (
     <Frame
-      title="Мои записи"
+      title="История посещений"
       subtitle={`${CLIENT.name} · ${CLIENT.tgUser}`}
+      onBack={() => navigate(-1)}
       right={<ThemeBtn theme={theme} />}
-      tabbar={<TabBar active="my" />}
     >
       <div className="pad">
         {!MY_BOOKINGS.length && (

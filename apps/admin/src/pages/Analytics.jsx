@@ -37,7 +37,7 @@ const DAILY_ROWS = [
 ]
 
 // ── Бар-чарт (псевдо) ──
-function BarChart({ bars, maxVal, color = '#7C3AED', prevColor = '#DDD6FE', showPrev = true, valueLabel = '' }) {
+function BarChart({ bars, maxVal, color = '#3B65F3', prevColor = '#BACEFB', showPrev = true, valueLabel = '' }) {
   const max = maxVal || Math.max(...bars.map(b => Math.max(b.cur, b.prev || 0)))
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 120, paddingTop: 8 }}>
@@ -66,9 +66,9 @@ function HBar({ name, load, prev }) {
           {load}%<span style={{ fontSize: 11, color: delta >= 0 ? '#16A34A' : '#EF4444', marginLeft: 6 }}>{delta >= 0 ? '+' : ''}{delta}%</span>
         </span>
       </div>
-      <div style={{ background: '#EDE9FE', borderRadius: 4, height: 8, position: 'relative' }}>
-        <div style={{ background: '#DDD6FE', borderRadius: 4, height: 8, width: `${prev}%`, position: 'absolute' }} />
-        <div style={{ background: '#7C3AED', borderRadius: 4, height: 8, width: `${load}%`, position: 'absolute' }} />
+      <div style={{ background: '#DCE5FD', borderRadius: 4, height: 8, position: 'relative' }}>
+        <div style={{ background: '#BACEFB', borderRadius: 4, height: 8, width: `${prev}%`, position: 'absolute' }} />
+        <div style={{ background: '#3B65F3', borderRadius: 4, height: 8, width: `${load}%`, position: 'absolute' }} />
       </div>
     </div>
   )
@@ -77,8 +77,8 @@ function HBar({ name, load, prev }) {
 // Легенда текущий/прошлый для шапки графика
 const ChartLegend = () => (
   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}><span style={{ width: 10, height: 10, background: '#7C3AED', borderRadius: 2 }} />Текущий</span>
-    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}><span style={{ width: 10, height: 10, background: '#DDD6FE', borderRadius: 2 }} />Прошлый</span>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}><span style={{ width: 10, height: 10, background: '#3B65F3', borderRadius: 2 }} />Текущий</span>
+    <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}><span style={{ width: 10, height: 10, background: '#BACEFB', borderRadius: 2 }} />Прошлый</span>
   </div>
 )
 

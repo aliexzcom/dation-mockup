@@ -21,13 +21,13 @@ export default function StaffSelect({ theme, onPick, onLogout, branch, onChangeB
     <div className="full">
       <div style={{ position: 'fixed', top: 18, right: 18, display: 'flex', gap: 10 }}>
         <ThemeToggle theme={theme} />
-        <button className="btn ghost sm" onClick={() => { onLogout(); navigate('/login') }}>
+        <button className="btn ghost sm" onClick={() => { onLogout(); navigate('/pair') }}>
           <IcLogout size={16} /> Выйти из терминала
         </button>
       </div>
 
       <div className="brand-row">
-        <div className="brand-mark">{COMPANY.short}</div>
+        <div className="brand-mark"><img src="/logo-mark.svg" alt="Dation" /></div>
         <div className="brand-name">Выберите профиль<span>{COMPANY.name}</span></div>
       </div>
 

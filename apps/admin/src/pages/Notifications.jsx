@@ -213,7 +213,7 @@ export default function Notifications({ view = null }) {
         ) : null}
       />
 
-      <div className="note" style={{ marginBottom: 16, padding: '10px 14px', background: '#F5F3FF', borderRadius: 8, borderLeft: '3px solid #7C3AED' }}>
+      <div className="note" style={{ marginBottom: 16, padding: '10px 14px', background: '#EEF2FE', borderRadius: 8, borderLeft: '3px solid #3B65F3' }}>
         Все уведомления отправляются исключительно через Telegram-бота. SMS-рассылки не используются.
         Сообщения получают только клиенты, начавшие диалог с ботом и давшие согласие на получение уведомлений.
       </div>
@@ -455,7 +455,7 @@ export default function Notifications({ view = null }) {
           <span>Добавить инлайн-кнопки Telegram</span>
         </div>
         {form.buttons && (
-          <div style={{ padding: '10px 14px', background: '#F5F3FF', borderRadius: 8, marginBottom: 16 }}>
+          <div style={{ padding: '10px 14px', background: '#EEF2FE', borderRadius: 8, marginBottom: 16 }}>
             <div className="muted small" style={{ marginBottom: 8 }}>Кнопки в сообщении:</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <span className="tag">Записаться</span>

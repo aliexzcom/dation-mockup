@@ -45,7 +45,7 @@ export default function Settings() {
                   cursor: 'pointer',
                   fontWeight: section === s ? 600 : 400,
                   color: section === s ? 'var(--violet)' : 'var(--text)',
-                  background: section === s ? 'var(--violet-soft, #f5f3ff)' : 'transparent',
+                  background: section === s ? 'var(--violet-soft, #EEF2FE)' : 'transparent',
                   borderLeft: section === s ? '3px solid var(--violet)' : '3px solid transparent',
                   fontSize: 14,
                 }}
@@ -149,7 +149,7 @@ function SectionJournal() {
         {[
           ['Ожидает подтверждения', '#F59E0B'],
           ['Подтверждён', '#3B82F6'],
-          ['Клиент пришёл', '#7C3AED'],
+          ['Клиент пришёл', '#3B65F3'],
           ['Услуга оказана', '#16A34A'],
           ['Не пришёл', '#EF4444'],
           ['Отменён', '#9CA3AF'],

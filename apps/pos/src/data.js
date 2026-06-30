@@ -15,7 +15,7 @@ export const BRANCHES = [
 // Сотрудники. posAccess=true — есть доступ к POS-терминалу (видны на экране выбора профиля).
 // pin — код входа под профиль (мок).
 export const STAFF = [
-  { id: 'u1', name: 'Дильноза Каримова', role: 'Администратор', initials: 'ДК', color: '#7C3AED', pin: '1111', posAccess: true },
+  { id: 'u1', name: 'Дильноза Каримова', role: 'Администратор', initials: 'ДК', color: '#3B65F3', pin: '1111', posAccess: true },
   { id: 'u2', name: 'Азиз Рахимов', role: 'Барбер', initials: 'АР', color: '#2563EB', pin: '2222', posAccess: true },
   { id: 'u3', name: 'Нигора Саидова', role: 'Мастер маникюра', initials: 'НС', color: '#DB2777', pin: '3333', posAccess: true },
   { id: 'u4', name: 'Сабина Алиева', role: 'Бровист, лешмейкер', initials: 'СА', color: '#16A34A', pin: '4444', posAccess: true },

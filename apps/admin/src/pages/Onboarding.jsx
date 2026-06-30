@@ -39,7 +39,7 @@ export default function Onboarding() {
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg-soft)', padding: 20 }}>
       <div className="card" style={{ width: 540, maxWidth: '100%', padding: 32 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, justifyContent: 'center', marginBottom: 6 }}>
-          <div className="brand-mark" style={{ width: 36, height: 36, fontSize: 18 }}>D</div>
+          <div className="brand-mark" style={{ width: 36, height: 36 }}><img src="/logo-mark.svg" alt="Dation" /></div>
           <span style={{ fontWeight: 700, fontSize: 22 }}>Dation</span>
         </div>
         <p className="muted" style={{ textAlign: 'center', marginTop: 0, marginBottom: 20 }}>

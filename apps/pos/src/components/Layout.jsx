@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { ThemeToggle } from './ui.jsx'
 import { IcCalendar, IcGear, IcLogout } from '../icons.jsx'
-import { COMPANY } from '../data.js'
 
 // Каркас POS после входа: боковое меню + верхняя панель + контент.
 export default function Layout({ active, title, employee, theme, onLogout, actions, children }) {
@@ -16,7 +15,7 @@ export default function Layout({ active, title, employee, theme, onLogout, actio
     <div className="pos">
       <aside className="pos-side">
         <div className="pos-brand">
-          <div className="brand-mark" style={{ width: 32, height: 32, fontSize: 15 }}>{COMPANY.short}</div>
+          <div className="brand-mark" style={{ width: 32, height: 32 }}><img src="/logo-mark.svg" alt="Dation" /></div>
           Dation POS
         </div>
         <nav className="pos-nav">

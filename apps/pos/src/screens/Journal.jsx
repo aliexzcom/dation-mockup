@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Tick, Badge } from '../components/ui.jsx'
 import {
-  IcClose, IcArrowL, IcArrowR, IcPlay, IcCheck, IcClock, IcPhone,
-  IcCash, IcCard, IcWallet, IcReceipt, IcList, IcColumns,
+  IcClose, IcArrowL, IcArrowR, IcPlay, IcCheck, IcPhone,
+  IcCash, IcCard, IcWallet, IcReceipt, IcCalendar, IcColumns,
 } from '../icons.jsx'
 import {
   TODAY_APPOINTMENTS, SERVICES, STAFF, STATUS, PAY_METHODS,
@@ -10,18 +10,28 @@ import {
 } from '../data.js'
 import { formatUzbPhone, isUzbPhoneValid } from '../phone.js'
 
-const FILTERS = [
-  { key: 'all', label: 'Все' },
-  { key: 'booked', label: 'Запланированы' },
-  { key: 'in_progress', label: 'В работе' },
-  { key: 'closed', label: 'Завершённые' },
-]
+// Параметры сетки дня (как в журнале веб-аппа): часы 09:00–20:00
+const HOURS = Array.from({ length: 12 }, (_, i) => 9 + i)
+const START_HOUR = 9
+const HOUR_H = 100
+const HEADER_H = 66
+const GRID_H = HOURS.length * HOUR_H
+
+// Цвета карточек записи по статусу (светлые «стикеры», читаются в обеих темах)
+const STATUS_HEX = {
+  blue: { c: '#DBEAFE', b: '#3B82F6' },
+  amber: { c: '#FEF3C7', b: '#F59E0B' },
+  violet: { c: '#DCE5FD', b: '#3B65F3' },
+  green: { c: '#DCFCE7', b: '#16A34A' },
+  gray: { c: '#F3F4F6', b: '#9CA3AF' },
+}
+const apptDurMin = (a) => a.services.reduce((s, x) => s + (SERVICES.find((v) => v.id === x.id)?.dur || 0), 0)
+const timeToHour = (t) => { const [h, m] = t.split(':').map(Number); return h + (m || 0) / 60 }
 
 // Колонки канбан-доски (по статусам — слева направо по флоу)
 const COLUMNS = [
   { key: 'booked', label: 'Запланированы', dot: 'blue' },
   { key: 'in_progress', label: 'В работе', dot: 'amber' },
-  { key: 'done', label: 'К оплате', dot: 'violet' },
   { key: 'paid', label: 'Оплачены', dot: 'green' },
 ]
 
@@ -29,19 +39,13 @@ const payIcon = { cash: IcCash, card: IcCard, wallet: IcWallet }
 
 export default function Journal({ employee, creating, setCreating }) {
   const [appts, setAppts] = useState(TODAY_APPOINTMENTS)
-  const [view, setView] = useState('list')      // 'list' | 'board'
-  const [filter, setFilter] = useState('all')
+  const [view, setView] = useState('grid')      // 'grid' | 'board'
   const [openId, setOpenId] = useState(null)   // запись в drawer
   const [payId, setPayId] = useState(null)      // запись в модалке оплаты
 
   const open = appts.find((a) => a.id === openId) || null
   const paying = appts.find((a) => a.id === payId) || null
-
-  const shown = useMemo(() => appts.filter((a) => {
-    if (filter === 'all') return true
-    if (filter === 'closed') return a.status === 'done' || a.status === 'paid'
-    return a.status === filter
-  }), [appts, filter])
+  const masters = STAFF.filter((s) => s.posAccess)
 
   const stats = useMemo(() => {
     const active = appts.filter((a) => a.status !== 'cancelled')
@@ -85,33 +89,16 @@ export default function Journal({ employee, creating, setCreating }) {
           <div className="lbl">Сегодня, 30 июня</div>
           <button className="icon-btn"><IcArrowR size={18} /></button>
         </div>
-        {view === 'list' && (
-          <div className="seg">
-            {FILTERS.map((f) => (
-              <button key={f.key} className={'seg-btn' + (filter === f.key ? ' active' : '')} onClick={() => setFilter(f.key)}>{f.label}</button>
-            ))}
-          </div>
-        )}
         <div style={{ flex: 1 }} />
         <div className="seg">
-          <button className={'seg-btn' + (view === 'list' ? ' active' : '')} onClick={() => setView('list')}><IcList size={16} /> Список</button>
+          <button className={'seg-btn' + (view === 'grid' ? ' active' : '')} onClick={() => setView('grid')}><IcCalendar size={16} /> Сетка</button>
           <button className={'seg-btn' + (view === 'board' ? ' active' : '')} onClick={() => setView('board')}><IcColumns size={16} /> Канбан</button>
         </div>
       </div>
 
-      {view === 'board' ? (
-        <Kanban appts={appts} onOpen={setOpenId} onMove={moveAppt} />
-      ) : shown.length === 0 ? (
-        <div className="empty">
-          <div className="ei"><IcClock size={30} /></div>
-          <h4>Записей нет</h4>
-          <p className="muted">В этой вкладке пока пусто.</p>
-        </div>
-      ) : (
-        <div className="appt-list">
-          {shown.map((a) => <ApptRow key={a.id} a={a} onClick={() => setOpenId(a.id)} />)}
-        </div>
-      )}
+      {view === 'board'
+        ? <Kanban appts={appts} onOpen={setOpenId} onMove={moveAppt} />
+        : <DayGrid appts={appts} masters={masters} onOpen={setOpenId} />}
 
       {open && (
         <ApptDrawer
@@ -130,24 +117,58 @@ export default function Journal({ employee, creating, setCreating }) {
   )
 }
 
-function ApptRow({ a, onClick }) {
-  const st = STATUS[a.status]
-  const master = staffById(a.masterId)
+// Сетка дня: колонки мастеров × часовая шкала, карточки записей позиционированы
+// по времени начала и длительности (как журнал в веб-аппе).
+function DayGrid({ appts, masters, onOpen }) {
   return (
-    <div className="appt" onClick={onClick}>
-      <div className="appt-time">
-        <div className="hh">{a.time}</div>
-        <div className="dd">{fmtDur(a.services.reduce((s, x) => s + (SERVICES.find((v) => v.id === x.id)?.dur || 0), 0))}</div>
+    <div style={{ border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', background: 'var(--panel)' }}>
+      <div style={{ display: 'flex', overflowX: 'auto' }}>
+        {/* Часовая шкала */}
+        <div style={{ width: 62, flexShrink: 0, borderRight: '1px solid var(--border)' }}>
+          <div style={{ height: HEADER_H, borderBottom: '1px solid var(--border)' }} />
+          {HOURS.map((h) => (
+            <div key={h} style={{ height: HOUR_H, padding: '7px 10px 0', fontSize: 13.5, fontWeight: 600, color: 'var(--text-faint)', textAlign: 'right' }}>{h}:00</div>
+          ))}
+        </div>
+
+        {/* Колонки мастеров */}
+        {masters.map((s) => {
+          const items = appts.filter((a) => a.masterId === s.id && a.status !== 'cancelled')
+          return (
+            <div key={s.id} style={{ flex: 1, minWidth: 224, borderRight: '1px solid var(--border)' }}>
+              <div style={{ height: HEADER_H, padding: '0 14px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 11, alignItems: 'center' }}>
+                <div className="who-ava" style={{ background: s.color, width: 40, height: 40, fontSize: 14 }}>{s.initials}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{s.role}</div>
+                </div>
+              </div>
+              <div style={{ position: 'relative', height: GRID_H }}>
+                {HOURS.map((h, i) => (
+                  <div key={h} style={{ position: 'absolute', left: 0, right: 0, top: i * HOUR_H, height: HOUR_H, borderBottom: '1px solid var(--border)', background: i % 2 ? 'var(--panel-soft)' : 'var(--panel)' }} />
+                ))}
+                {items.map((a) => <GridCell key={a.id} a={a} onOpen={onOpen} />)}
+              </div>
+            </div>
+          )
+        })}
       </div>
-      <div className="appt-main">
-        <div className="appt-client">{a.client.name}</div>
-        <div className="appt-meta">{master?.name} · {a.source}</div>
-        <div>{a.services.map((s) => <span key={s.id} className="svc-chip">{s.name}</span>)}</div>
-      </div>
-      <div className="appt-side">
-        <Badge cls={st.cls}>{st.label}</Badge>
-        <div className="appt-total">{fmtPrice(sumServices(a.services))}</div>
-      </div>
+    </div>
+  )
+}
+
+function GridCell({ a, onOpen }) {
+  const top = (timeToHour(a.time) - START_HOUR) * HOUR_H
+  const height = Math.max(56, (apptDurMin(a) / 60) * HOUR_H - 8)
+  const col = STATUS_HEX[STATUS[a.status].cls] || STATUS_HEX.gray
+  return (
+    <div onClick={() => onOpen(a.id)} title="Открыть запись"
+      style={{ position: 'absolute', left: 7, right: 7, top: top + 4, height, background: col.c, borderLeft: `5px solid ${col.b}`, borderRadius: 12, padding: '9px 12px', cursor: 'pointer', overflow: 'hidden', color: '#1F2937' }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#5B6472', marginBottom: 1 }}>{a.time} · {fmtPrice(sumServices(a.services))}</div>
+      <div style={{ fontWeight: 800, fontSize: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.client.name}</div>
+      {a.services.map((s) => (
+        <div key={s.id} style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.35, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
+      ))}
     </div>
   )
 }

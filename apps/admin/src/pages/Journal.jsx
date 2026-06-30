@@ -7,7 +7,7 @@ import { IcArrowL, IcArrowR, IcPlus, IcSearch } from '../components/icons.jsx'
 const STATUSES = {
   wait:    { label: 'Ожидает подтверждения', color: 'amber', c: '#FEF3C7', b: '#F59E0B' },
   conf:    { label: 'Подтверждён',           color: 'blue',  c: '#DBEAFE', b: '#3B82F6' },
-  came:    { label: 'Клиент пришёл',         color: '',      c: '#EDE9FE', b: '#7C3AED' },
+  came:    { label: 'Клиент пришёл',         color: '',      c: '#DCE5FD', b: '#3B65F3' },
   done:    { label: 'Услуга оказана',        color: 'green', c: '#DCFCE7', b: '#16A34A' },
   noshow:  { label: 'Не пришёл (no-show)',   color: 'red',   c: '#FEE2E2', b: '#EF4444' },
   cancel:  { label: 'Отменён',               color: 'gray',  c: '#F3F4F6', b: '#9CA3AF' },

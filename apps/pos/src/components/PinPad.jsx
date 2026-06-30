@@ -1,22 +1,28 @@
 import { useState } from 'react'
 import { IcBackspace } from '../icons.jsx'
 
-// Самодостаточный PIN-пад. Сверяет ввод с expectedPin и вызывает onSuccess.
-export default function PinPad({ expectedPin, onSuccess }) {
+// PIN-пад в двух режимах:
+// 1) expectedPin + onSuccess — сверяет ввод с ожидаемым PIN (выбор сотрудника);
+// 2) length + onComplete(code) — свободный ввод; родитель решает, верен ли код
+//    (onComplete возвращает true/false). На успехе родитель сам переходит дальше.
+export default function PinPad({ expectedPin, length, onSuccess, onComplete, reveal }) {
   const [pin, setPin] = useState('')
   const [err, setErr] = useState(false)
-  const len = expectedPin.length
+  const len = expectedPin ? expectedPin.length : (length || 4)
 
   const press = (d) => {
     if (pin.length >= len) return
     const np = pin + d
     setPin(np)
     if (np.length === len) {
-      if (np === expectedPin) {
+      const fail = () => { setErr(true); setTimeout(() => { setErr(false); setPin('') }, 520) }
+      if (onComplete) {
+        // на успехе родитель навигэйтит (экран размонтируется) — стейт не трогаем
+        if (onComplete(np) === false) fail()
+      } else if (np === expectedPin) {
         setTimeout(onSuccess, 130)
       } else {
-        setErr(true)
-        setTimeout(() => { setErr(false); setPin('') }, 520)
+        fail()
       }
     }
   }
@@ -24,11 +30,20 @@ export default function PinPad({ expectedPin, onSuccess }) {
 
   return (
     <div className="pin-wrap">
-      <div className="pin-dots">
-        {Array.from({ length: len }).map((_, i) => (
-          <div key={i} className={'pin-dot' + (i < pin.length ? ' on' : '') + (err ? ' err' : '')} />
-        ))}
-      </div>
+      {reveal ? (
+        <div className="code-cells">
+          {Array.from({ length: len }).map((_, i) => (
+            <div key={i} className={'code-cell' + (i === pin.length ? ' active' : '') + (err ? ' err' : '')}>{pin[i] || ''}</div>
+          ))}
+        </div>
+      ) : (
+        <div className="pin-dots">
+          {Array.from({ length: len }).map((_, i) => (
+            <div key={i} className={'pin-dot' + (i < pin.length ? ' on' : '') + (err ? ' err' : '')} />
+          ))}
+        </div>
+      )}
+      {reveal && <div className="code-sep" />}
       <div className="pinpad">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
           <button key={n} className="pin-key" onClick={() => press(String(n))}>{n}</button>

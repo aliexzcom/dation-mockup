@@ -1,11 +1,11 @@
 :root {
   /* Фиолетовый бренд Dation */
-  --violet: #7C3AED;
-  --violet-hover: #6D28D9;
-  --violet-active: #5B21B6;
-  --violet-50: #F5F3FF;
-  --violet-100: #EDE9FE;
-  --violet-200: #DDD6FE;
+  --violet: #3B65F3;
+  --violet-hover: #2C53E6;
+  --violet-active: #1E3FC0;
+  --violet-50: #EEF2FE;
+  --violet-100: #DCE5FD;
+  --violet-200: #BACEFB;
 
   --bg: #F5F6F8;          /* фон под телефоном (десктоп) */
   --app-bg: #FFFFFF;      /* фон самого приложения */
@@ -32,12 +32,12 @@
 
 /* Тёмная тема Telegram */
 .dark {
-  --violet: #9B7BF2;
-  --violet-hover: #8B5CF6;
-  --violet-active: #C4B5FD;
-  --violet-50: rgba(139,92,246,.12);
-  --violet-100: rgba(139,92,246,.20);
-  --violet-200: rgba(139,92,246,.38);
+  --violet: #6E8FF7;
+  --violet-hover: #5A7FF5;
+  --violet-active: #A8BEFB;
+  --violet-50: rgba(59, 101, 243,.12);
+  --violet-100: rgba(59, 101, 243,.20);
+  --violet-200: rgba(59, 101, 243,.38);
 
   --bg: #0B0C0F;
   --app-bg: #17181C;
@@ -102,9 +102,10 @@ button { font-family: var(--font); }
 .tbar-title .t { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tbar-title .s { font-size: 12px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tbar-logo {
-  width: 34px; height: 34px; border-radius: 9px; background: var(--violet); color: #fff;
-  display: grid; place-items: center; font-weight: 800; flex-shrink: 0; font-size: 15px;
+  width: 34px; height: 34px; border-radius: 9px; background: #fff; border: 1px solid var(--border);
+  display: grid; place-items: center; flex-shrink: 0; overflow: hidden;
 }
+.tbar-logo img { width: 78%; height: 78%; object-fit: contain; display: block; }
 .tbar-ico {
   width: 38px; height: 38px; border: 0; background: transparent; color: var(--text-muted);
   display: grid; place-items: center; cursor: pointer; border-radius: 50%; flex-shrink: 0;
@@ -112,9 +113,15 @@ button { font-family: var(--font); }
 .tbar-ico:hover { background: var(--panel-soft); color: var(--violet); }
 
 /* ---------- Прокручиваемое тело ---------- */
-.scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-.scroll.with-mainbtn { padding-bottom: calc(var(--mainbtn-h) + 8px); }
-.pad { padding: 16px; }
+.scroll {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background-image: url(/logo-mono.svg);
+  background-repeat: no-repeat;
+  background-position: center 90%;
+  background-size: 60%;
+}
+.scroll.with-mainbtn { padding-bottom: calc(var(--mainbtn-h) + 30px); }
+.pad { padding: 16px; padding-bottom: max(32px, calc(16px + env(safe-area-inset-bottom))); }
 
 /* ---------- Главная: приветствие и рекламные обложки ---------- */
 .greet { padding: 16px 16px 4px; }
@@ -262,21 +269,75 @@ textarea.input { resize: vertical; min-height: 76px; }
 
 /* Telegram MainButton — закреплён снизу */
 .mainbtn {
-  position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 10px 16px max(30px, calc(12px + env(safe-area-inset-bottom)));
   background: var(--app-bg); border-top: 1px solid var(--border); z-index: 20;
 }
 .mainbtn .btn { border-radius: 14px; height: 52px; }
 
-/* ---------- Нижняя навигация (Запись / Мои записи) ---------- */
-.tabbar {
-  flex-shrink: 0; display: flex; border-top: 1px solid var(--border); background: var(--app-bg);
-  padding-bottom: env(safe-area-inset-bottom);
+/* ---------- Меню (бургер) и профиль ---------- */
+.profile-card {
+  display: flex; align-items: center; gap: 14px; background: var(--panel);
+  border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow);
 }
-.tabbar-item {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 0;
-  border: 0; background: transparent; color: var(--text-faint); cursor: pointer; font-size: 11px; font-weight: 600;
+.profile-card .ava { width: 56px; height: 56px; font-size: 18px; border-radius: 50%; }
+.profile-card .pn { font-weight: 800; font-size: 17px; }
+.profile-card .pp { color: var(--text-muted); font-size: 13.5px; }
+
+.menu-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 18px;
+  overflow: hidden; margin-bottom: 14px; box-shadow: var(--shadow);
 }
-.tabbar-item.active { color: var(--violet); }
+.mrow {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 15px 16px;
+  border: 0; background: transparent; cursor: pointer; font-family: var(--font);
+  color: var(--text); font-size: 15px; font-weight: 600; text-align: left;
+}
+.mrow:not(:last-child) { border-bottom: 1px solid var(--border); }
+.mrow:active { background: var(--panel-soft); }
+.mrow .mi { color: var(--violet); display: inline-flex; flex-shrink: 0; }
+.mrow .ml { flex: 1; min-width: 0; }
+.mrow .mcount { background: var(--violet-100); color: var(--violet-active); font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 20px; }
+.mrow .mchev { color: var(--text-faint); display: inline-flex; flex-shrink: 0; }
+.menu-foot { text-align: center; color: var(--text-faint); font-size: 13px; font-weight: 600; margin-top: 8px; }
+
+/* Переключатель темы (Светлая / Тёмная) */
+.seg2 { display: flex; gap: 10px; margin-bottom: 14px; }
+.seg2-btn {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px 0; border: 1.5px solid var(--border); border-radius: 14px;
+  background: var(--panel); color: var(--text-muted); font-family: var(--font); font-size: 14.5px; font-weight: 600; cursor: pointer;
+}
+.seg2-btn.active { border-color: var(--violet); color: var(--violet); background: var(--violet-50); }
+.note-mini { color: var(--text-faint); font-size: 13px; line-height: 1.5; }
+
+/* «Косичка»: отзывы и фото работ — 2 колонки в шахматном порядке */
+.braid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.braid-cell { aspect-ratio: 1 / 1; border-radius: 16px; overflow: hidden; }
+.review-cell {
+  background: var(--panel); border: 1px solid var(--border); box-shadow: var(--shadow);
+  padding: 13px; display: flex; flex-direction: column; gap: 7px;
+}
+.rc-stars { display: flex; gap: 2px; color: #F5A623; }
+.rc-text {
+  flex: 1; font-size: 13px; line-height: 1.4; color: var(--text); overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
+}
+.rc-name { font-size: 12.5px; font-weight: 700; color: var(--text-muted); }
+.photo-cell { background-size: cover; background-position: center; background-color: var(--violet-100); }
+
+/* ---------- Страница отзывов ---------- */
+.rev-summary {
+  display: flex; align-items: center; gap: 16px; background: var(--panel); border: 1px solid var(--border);
+  border-radius: 18px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow);
+}
+.rev-avg { font-size: 38px; font-weight: 800; color: var(--text); line-height: 1; }
+.rev-avg-stars { display: flex; gap: 2px; color: #F5A623; margin-bottom: 3px; }
+.rev-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+.rev-head { display: flex; align-items: center; justify-content: space-between; }
+.rev-name { font-weight: 700; font-size: 15px; }
+.rev-date { color: var(--text-faint); font-size: 12.5px; }
+.rev-text { font-size: 14px; line-height: 1.45; color: var(--text); }
 
 /* ---------- Бейджи статусов ---------- */
 .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
