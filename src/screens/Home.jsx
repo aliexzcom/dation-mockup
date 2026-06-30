@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Frame, TabBar, ThemeBtn } from '../components/ui.jsx'
-import { IcChevR, IcPlusCal } from '../icons.jsx'
+import { IcChevR, IcPlusCal, IcBack } from '../icons.jsx'
 import { COMPANY, CLIENT, BANNERS, CATEGORIES, fmtPrice, fmtDur } from '../data.js'
 
 // Несколько популярных услуг для быстрого старта
@@ -57,6 +57,18 @@ export default function Home({ theme }) {
     if (el) setActive(Math.round(el.scrollLeft / cardStep()))
   }
 
+  // Листание афиш стрелками (с заворачиванием по кругу)
+  const scrollByDir = (dir) => {
+    const el = stripRef.current
+    if (!el) return
+    const step = cardStep()
+    const last = BANNERS.length - 1
+    let next = Math.round(el.scrollLeft / step) + dir
+    if (next < 0) next = last
+    if (next > last) next = 0
+    el.scrollTo({ left: next * step, behavior: 'smooth' })
+  }
+
   return (
     <Frame
       title={COMPANY.name}
@@ -69,16 +81,24 @@ export default function Home({ theme }) {
         <div className="co">Записывайтесь онлайн за пару касаний</div>
       </div>
 
-      <div className="promo-strip" ref={stripRef} onScroll={onStripScroll}>
-        {BANNERS.map((b) => (
-          <div key={b.id} className="promo" style={{ background: b.grad }} onClick={() => navigate('/booking')}>
-            <span className="promo-badge">{b.badge}</span>
-            <div>
-              <h3>{b.title}</h3>
-              <p>{b.sub}</p>
+      <div className="promo-wrap">
+        <div className="promo-strip" ref={stripRef} onScroll={onStripScroll}>
+          {BANNERS.map((b) => (
+            <div key={b.id} className="promo" style={{ background: b.grad }} onClick={() => navigate('/booking')}>
+              <span className="promo-badge">{b.badge}</span>
+              <div>
+                <h3>{b.title}</h3>
+                <p>{b.sub}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        <button type="button" className="promo-arrow promo-arrow-l" onClick={() => scrollByDir(-1)} aria-label="Предыдущая афиша">
+          <IcBack size={18} />
+        </button>
+        <button type="button" className="promo-arrow promo-arrow-r" onClick={() => scrollByDir(1)} aria-label="Следующая афиша">
+          <IcChevR size={18} />
+        </button>
       </div>
       <div className="promo-dots">
         {BANNERS.map((b, i) => (
