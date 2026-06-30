@@ -1,0 +1,311 @@
+:root {
+  /* Фиолетовый бренд Dation */
+  --violet: #7C3AED;
+  --violet-hover: #6D28D9;
+  --violet-active: #5B21B6;
+  --violet-50: #F5F3FF;
+  --violet-100: #EDE9FE;
+  --violet-200: #DDD6FE;
+
+  --bg: #F5F6F8;          /* фон под телефоном (десктоп) */
+  --app-bg: #FFFFFF;      /* фон самого приложения */
+  --panel: #FFFFFF;
+  --panel-soft: #F7F7F9;
+  --text: #1F2937;
+  --text-muted: #6B7280;
+  --text-faint: #9CA3AF;
+  --border: #ECEDF1;
+  --border-strong: #DDDFE5;
+
+  --green: #16A34A;
+  --amber: #D97706;
+  --red: #DC2626;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.08);
+  --shadow-lg: 0 12px 34px rgba(16,24,40,.16);
+  --font: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+  --tbar-h: 52px;
+  --mainbtn-h: 76px;
+}
+
+/* Тёмная тема Telegram */
+.dark {
+  --violet: #9B7BF2;
+  --violet-hover: #8B5CF6;
+  --violet-active: #C4B5FD;
+  --violet-50: rgba(139,92,246,.12);
+  --violet-100: rgba(139,92,246,.20);
+  --violet-200: rgba(139,92,246,.38);
+
+  --bg: #0B0C0F;
+  --app-bg: #17181C;
+  --panel: #1F2026;
+  --panel-soft: #25262E;
+  --text: #F2F4F8;
+  --text-muted: #AEB4C0;
+  --text-faint: #7E8593;
+  --border: #2A2C34;
+  --border-strong: #3A3D47;
+
+  --green: #34D399;
+  --amber: #FBBF24;
+  --red: #F87171;
+
+  --shadow: 0 1px 2px rgba(0,0,0,.3);
+  --shadow-lg: 0 14px 34px rgba(0,0,0,.55);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+h1,h2,h3,h4 { margin: 0; font-weight: 700; }
+button { font-family: var(--font); }
+
+/* ---------- Каркас «телефона» ---------- */
+.frame-wrap {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 0; background: var(--bg);
+}
+.phone {
+  width: 100%; max-width: 440px; height: 100vh; max-height: 100vh;
+  background: var(--app-bg); position: relative; display: flex; flex-direction: column;
+  overflow: hidden;
+}
+@media (min-width: 480px) {
+  .frame-wrap { padding: 24px; }
+  .phone { height: calc(100vh - 48px); max-height: 900px; border-radius: 30px;
+    box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
+}
+
+/* ---------- Верхняя панель (Telegram header) ---------- */
+.tbar {
+  height: var(--tbar-h); flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+  padding: 0 8px 0 6px; border-bottom: 1px solid var(--border); background: var(--app-bg);
+  position: relative; z-index: 10;
+}
+.tbar-back {
+  width: 40px; height: 40px; border: 0; background: transparent; color: var(--text);
+  display: grid; place-items: center; cursor: pointer; border-radius: 50%;
+}
+.tbar-back:hover { background: var(--panel-soft); }
+.tbar-title { flex: 1; min-width: 0; }
+.tbar-title .t { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tbar-title .s { font-size: 12px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tbar-logo {
+  width: 34px; height: 34px; border-radius: 9px; background: var(--violet); color: #fff;
+  display: grid; place-items: center; font-weight: 800; flex-shrink: 0; font-size: 15px;
+}
+.tbar-ico {
+  width: 38px; height: 38px; border: 0; background: transparent; color: var(--text-muted);
+  display: grid; place-items: center; cursor: pointer; border-radius: 50%; flex-shrink: 0;
+}
+.tbar-ico:hover { background: var(--panel-soft); color: var(--violet); }
+
+/* ---------- Прокручиваемое тело ---------- */
+.scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.scroll.with-mainbtn { padding-bottom: calc(var(--mainbtn-h) + 8px); }
+.pad { padding: 16px; }
+
+/* ---------- Главная: приветствие и рекламные обложки ---------- */
+.greet { padding: 16px 16px 4px; }
+.greet .hi { font-size: 22px; font-weight: 800; }
+.greet .co { color: var(--text-muted); font-size: 14px; margin-top: 2px; }
+
+.promo-strip { display: flex; gap: 12px; overflow-x: auto; padding: 12px 30px 6px; scroll-padding: 0 30px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.promo-strip::-webkit-scrollbar { display: none; }
+.promo {
+  flex-shrink: 0; width: 290px; min-height: 158px; border-radius: 20px; padding: 18px;
+  color: #fff; display: flex; flex-direction: column; justify-content: space-between;
+  scroll-snap-align: start; cursor: pointer; position: relative; overflow: hidden;
+}
+.promo::after {
+  content: ''; position: absolute; right: -30px; top: -30px; width: 120px; height: 120px;
+  border-radius: 50%; background: rgba(255,255,255,.14);
+}
+.promo-badge { align-self: flex-start; background: rgba(255,255,255,.22); backdrop-filter: blur(2px);
+  padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 700; position: relative; z-index: 1; }
+.promo h3 { font-size: 21px; font-weight: 800; line-height: 1.2; position: relative; z-index: 1; }
+.promo p { font-size: 13.5px; opacity: .92; margin: 4px 0 0; position: relative; z-index: 1; }
+
+.promo-wrap { position: relative; }
+.promo-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: rgba(0,0,0,.42); color: #fff; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 3; box-shadow: 0 2px 8px rgba(0,0,0,.28);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); transition: background .15s;
+}
+.promo-arrow:hover { background: rgba(0,0,0,.6); }
+.promo-arrow-l { left: 6px; }
+.promo-arrow-r { right: 6px; }
+
+.promo-dots { display: flex; justify-content: center; gap: 6px; padding: 8px 0 2px; }
+.promo-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border-strong); transition: .2s; }
+.promo-dot.active { width: 18px; border-radius: 4px; background: var(--violet); }
+
+.quick-cta { padding: 6px 16px 2px; }
+
+/* Прогресс шагов */
+.steps { display: flex; gap: 5px; padding: 12px 16px 4px; }
+.step-pip { flex: 1; height: 4px; border-radius: 3px; background: var(--border); transition: background .2s; }
+.step-pip.done { background: var(--violet); }
+.step-pip.cur { background: var(--violet); }
+.step-label { padding: 8px 16px 2px; font-size: 12px; color: var(--text-faint); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+
+/* ---------- Заголовки секций ---------- */
+.h-screen { font-size: 22px; font-weight: 800; margin: 6px 0 2px; }
+.h-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 14px; }
+.sec-title { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); font-weight: 700; margin: 18px 0 8px; }
+
+/* ---------- Карточки выбора (филиал/услуга/мастер) ---------- */
+.pick {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 14px; background: var(--panel); border: 1.5px solid var(--border);
+  border-radius: var(--radius); cursor: pointer; margin-bottom: 10px; transition: .12s;
+  color: var(--text);
+}
+.pick:hover { border-color: var(--violet-200); }
+.pick.sel { border-color: var(--violet); background: var(--violet-50); }
+.pick-body { flex: 1; min-width: 0; }
+.pick-title { font-weight: 600; font-size: 15px; }
+.pick-meta { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+.pick-right { text-align: right; flex-shrink: 0; }
+.pick-price { font-weight: 700; font-size: 15px; white-space: nowrap; }
+.pick-dur { color: var(--text-faint); font-size: 12.5px; margin-top: 2px; white-space: nowrap; }
+
+/* Аватар/инициалы */
+.ava {
+  width: 46px; height: 46px; border-radius: 12px; background: var(--violet-100); color: var(--violet-active);
+  display: grid; place-items: center; font-weight: 700; font-size: 16px; flex-shrink: 0; overflow: hidden;
+}
+.ava.round { border-radius: 50%; }
+.ava.lg { width: 64px; height: 64px; font-size: 22px; border-radius: 18px; }
+
+/* Чекбокс-кружок выбора */
+.tick {
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border-strong); flex-shrink: 0;
+  display: grid; place-items: center; color: #fff;
+}
+.tick.on { background: var(--violet); border-color: var(--violet); }
+
+/* Звёзды рейтинга */
+.stars { display: inline-flex; align-items: center; gap: 3px; color: var(--amber); font-size: 13px; font-weight: 600; }
+
+/* ---------- Слоты даты/времени ---------- */
+.date-strip { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 8px; scrollbar-width: none; }
+.date-strip::-webkit-scrollbar { display: none; }
+.date-chip {
+  flex-shrink: 0; width: 58px; padding: 9px 0; border: 1.5px solid var(--border); border-radius: 13px;
+  background: var(--panel); cursor: pointer; text-align: center; color: var(--text);
+}
+.date-chip .wd { font-size: 11px; color: var(--text-faint); text-transform: uppercase; font-weight: 600; }
+.date-chip .dd { font-size: 19px; font-weight: 700; margin-top: 2px; }
+.date-chip .mo { font-size: 11px; color: var(--text-faint); }
+.date-chip.sel { border-color: var(--violet); background: var(--violet); }
+.date-chip.sel .wd, .date-chip.sel .dd, .date-chip.sel .mo { color: #fff; }
+.date-chip.off { opacity: .4; cursor: not-allowed; }
+
+.slot-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.slot {
+  padding: 11px 0; border: 1.5px solid var(--border); border-radius: 11px; background: var(--panel);
+  cursor: pointer; text-align: center; font-weight: 600; font-size: 14px; color: var(--text);
+}
+.slot:hover { border-color: var(--violet-200); }
+.slot.sel { border-color: var(--violet); background: var(--violet); color: #fff; }
+.slot.off { opacity: .35; cursor: not-allowed; text-decoration: line-through; }
+.slot-period { font-size: 12px; color: var(--text-faint); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin: 16px 0 8px; }
+
+/* ---------- Поля ввода ---------- */
+.field { margin-bottom: 14px; }
+.field > label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
+.input, textarea.input {
+  width: 100%; padding: 12px 14px; border: 1.5px solid var(--border-strong); border-radius: 12px;
+  font-size: 15px; font-family: var(--font); color: var(--text); background: var(--panel); outline: none;
+}
+.input:focus, textarea.input:focus { border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-100); }
+textarea.input { resize: vertical; min-height: 76px; }
+
+/* ---------- Сводка (kv) ---------- */
+.summary { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 16px; }
+.kv { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.kv:last-child { border-bottom: 0; }
+.kv .k { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
+.kv .v { font-weight: 600; text-align: right; }
+.kv.total .k, .kv.total .v { font-size: 17px; font-weight: 800; }
+
+/* ---------- Кнопки ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px 20px; border-radius: 14px; border: 1.5px solid var(--violet);
+  background: var(--violet); color: #fff; cursor: pointer; font-size: 15px; font-weight: 700;
+  font-family: var(--font); line-height: 1; width: 100%;
+}
+.btn:hover { background: var(--violet-hover); border-color: var(--violet-hover); }
+.btn:active { transform: scale(.99); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.secondary { background: var(--panel); color: var(--violet); border-color: var(--violet-200); }
+.btn.secondary:hover { background: var(--violet-50); border-color: var(--violet); }
+.btn.ghost { background: transparent; color: var(--text-muted); border-color: var(--border-strong); }
+.btn.ghost:hover { background: var(--panel-soft); color: var(--text); }
+.btn.danger { background: var(--panel); color: var(--red); border-color: #FCA5A5; }
+.btn.sm { padding: 9px 14px; font-size: 13.5px; border-radius: 11px; width: auto; }
+
+/* Telegram MainButton — закреплён снизу */
+.mainbtn {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: var(--app-bg); border-top: 1px solid var(--border); z-index: 20;
+}
+.mainbtn .btn { border-radius: 14px; height: 52px; }
+
+/* ---------- Нижняя навигация (Запись / Мои записи) ---------- */
+.tabbar {
+  flex-shrink: 0; display: flex; border-top: 1px solid var(--border); background: var(--app-bg);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tabbar-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 0;
+  border: 0; background: transparent; color: var(--text-faint); cursor: pointer; font-size: 11px; font-weight: 600;
+}
+.tabbar-item.active { color: var(--violet); }
+
+/* ---------- Бейджи статусов ---------- */
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.badge.violet { background: var(--violet-100); color: var(--violet-active); }
+.badge.green { background: rgba(22,163,74,.12); color: var(--green); }
+.badge.amber { background: rgba(217,119,6,.12); color: var(--amber); }
+.badge.gray { background: var(--panel-soft); color: var(--text-muted); }
+.badge.red { background: rgba(220,38,38,.10); color: var(--red); }
+
+/* Карточка записи в «Мои записи» */
+.bcard { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.bcard-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.bcard-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+/* Чип услуги */
+.schip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 9px; background: var(--violet-50); color: var(--violet-active); font-size: 13px; font-weight: 600; margin: 0 6px 6px 0; }
+
+/* ---------- Экран успеха ---------- */
+.success-ico {
+  width: 84px; height: 84px; border-radius: 50%; background: var(--violet); color: #fff;
+  display: grid; place-items: center; margin: 8px auto 18px;
+}
+.center { text-align: center; }
+
+/* Пустое состояние */
+.empty { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+.empty .ei { width: 64px; height: 64px; border-radius: 20px; background: var(--panel-soft); color: var(--text-faint); display: grid; place-items: center; margin: 0 auto 14px; }
+.empty h4 { font-size: 17px; color: var(--text); margin-bottom: 6px; }
+
+.note { background: var(--violet-50); border: 1px solid var(--violet-200); border-radius: 12px; padding: 12px 14px; color: var(--violet-active); font-size: 13.5px; }
+.muted { color: var(--text-muted); }
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
