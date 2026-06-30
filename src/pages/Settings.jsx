@@ -1,25 +1,12 @@
 import { useState } from 'react'
 import {
   PageHead, Button, Card, Badge, Table, Field, Input, Textarea,
-  Select, Switch, Checkbox, Chips, Drawer,
+  Select, Switch,
 } from '../components/ui.jsx'
 import { TimePicker } from '../components/TimePicker.jsx'
 import { IcPlus, IcEdit, IcTrash } from '../components/icons.jsx'
 
 // ---- мок-данные ----
-const INITIAL_USERS = [
-  { id: 1, name: 'Алина Смирнова', contact: 'alina@salon.ru', position: 'Администратор', branches: ['Центр'], status: 'active' },
-  { id: 2, name: 'Игорь Лебедев', contact: '+7 900 123-45-67', position: 'Барбер', branches: ['Центр', 'Север'], status: 'active' },
-  { id: 3, name: 'Светлана Котова', contact: 'kotova@salon.ru', position: 'Мастер маникюра', branches: ['Север'], status: 'active' },
-  { id: 4, name: 'Дмитрий Орлов', contact: '+7 911 000-11-22', position: 'Косметолог', branches: ['Центр'], status: 'blocked' },
-]
-
-const ACCESS_SECTIONS = [
-  'Журнал записей', 'Telegram Mini App', 'Клиенты (CRM)', 'Услуги',
-  'Сотрудники', 'Финансы', 'Склад', 'Уведомления',
-  'Аналитика и отчёты', 'Настройки', 'Филиалы / Сеть', 'Тарифы и оплата',
-]
-
 const PAYMENT_METHODS = [
   { id: 1, name: 'Наличные', active: true },
   { id: 2, name: 'Банковская карта', active: true },
@@ -27,31 +14,11 @@ const PAYMENT_METHODS = [
   { id: 4, name: 'Kaspi QR', active: true },
 ]
 
-const INITIAL_SALARY_SCHEMES = [
-  { id: 1, name: 'Базовая ставка + %', desc: 'Фиксированная ставка и процент с продаж' },
-  { id: 2, name: 'Только процент', desc: '30% от стоимости оказанных услуг' },
-  { id: 3, name: 'Оклад', desc: 'Фиксированный оклад без процентов' },
-]
-
-const EMPTY_SCHEME = { name: '', type: 'Фиксированный оклад', rate: '', percent: '', goodsPercent: '' }
-
-const AUDIT_LOG = [
-  { time: '24.06.2026 11:42', user: 'Алина Смирнова', action: 'Изменён статус записи → Подтверждён', ip: '192.168.1.5' },
-  { time: '24.06.2026 10:15', user: 'Игорь Лебедев', action: 'Добавлен клиент Мария Петрова', ip: '192.168.1.8' },
-  { time: '23.06.2026 18:00', user: 'Администратор', action: 'Изменены настройки доступа пользователя Дмитрий Орлов', ip: '192.168.1.1' },
-  { time: '23.06.2026 16:30', user: 'Светлана Котова', action: 'Создана запись на 24.06.2026 14:00', ip: '192.168.1.9' },
-]
-
 const NAV_SECTIONS = [
   'Компания',
   'Филиал',
-  'Пользователи и доступы',
   'Журнал',
-  'Услуги / Категории',
-  'Telegram Mini App и бот',
-  'Уведомления / шаблоны',
   'Финансы',
-  'Зарплатные схемы',
   'Резервные копии',
 ]
 
@@ -93,16 +60,9 @@ export default function Settings() {
         <div>
           {section === 'Компания' && <SectionCompany />}
           {section === 'Филиал' && <SectionBranch />}
-          {section === 'Пользователи и доступы' && <SectionUsers />}
           {section === 'Журнал' && <SectionJournal />}
           {section === 'Финансы' && <SectionFinance />}
-          {section === 'Зарплатные схемы' && <SectionSalary />}
           {section === 'Резервные копии' && <SectionBackup />}
-          {['Услуги / Категории', 'Telegram Mini App и бот', 'Уведомления / шаблоны'].includes(section) && (
-            <Card title={section}>
-              <p className="muted">Раздел управляется из отдельного модуля меню. Перейдите через левое меню приложения.</p>
-            </Card>
-          )}
         </div>
       </div>
     </>
@@ -166,211 +126,6 @@ function SectionBranch() {
       </Field>
       <p className="small muted">Перечислите даты через запятую. В эти дни онлайн-запись будет закрыта.</p>
     </Card>
-  )
-}
-
-const EMPTY_INVITE = { name: '', contact: '', position: '', branch: 'Центральный' }
-
-// ---- Пользователи и доступы ----
-function SectionUsers() {
-  const [users, setUsers] = useState(INITIAL_USERS)
-  const [accessDrawer, setAccessDrawer] = useState(null)
-  const [auditDrawer, setAuditDrawer] = useState(false)
-  const [inviteDrawer, setInviteDrawer] = useState(false)
-  const [form, setForm] = useState(EMPTY_INVITE)
-
-  const [accessMap, setAccessMap] = useState(() => {
-    const map = {}
-    INITIAL_USERS.forEach((u) => {
-      map[u.id] = ACCESS_SECTIONS.reduce((acc, s) => ({ ...acc, [s]: true }), {})
-    })
-    return map
-  })
-  const [visibilityMap, setVisibilityMap] = useState(() => {
-    const map = {}
-    INITIAL_USERS.forEach((u) => { map[u.id] = 'Весь филиал' })
-    return map
-  })
-
-  const toggleSection = (userId, sec) => {
-    setAccessMap((prev) => ({
-      ...prev,
-      [userId]: { ...prev[userId], [sec]: !prev[userId][sec] },
-    }))
-  }
-
-  const handleInviteSave = () => {
-    if (!form.name?.trim()) return
-    const newUser = {
-      id: Date.now(),
-      name: form.name.trim(),
-      contact: form.contact,
-      position: form.position,
-      branches: [form.branch],
-      status: 'active',
-    }
-    setUsers([newUser, ...users])
-    setAccessMap((prev) => ({
-      ...prev,
-      [newUser.id]: ACCESS_SECTIONS.reduce((acc, s) => ({ ...acc, [s]: true }), {}),
-    }))
-    setVisibilityMap((prev) => ({ ...prev, [newUser.id]: 'Весь филиал' }))
-    setForm(EMPTY_INVITE)
-    setInviteDrawer(false)
-  }
-
-  return (
-    <>
-      <Card
-        title="Пользователи и доступы"
-        actions={
-          <>
-            <Button size="sm" variant="secondary" onClick={() => setAuditDrawer(true)}>Журнал действий</Button>
-            <Button size="sm" onClick={() => setInviteDrawer(true)}><IcPlus size={14} /> Пригласить</Button>
-          </>
-        }
-      >
-        <div className="note small" style={{ marginBottom: 16 }}>
-          Доступом управляет владелец индивидуально по каждому разделу. Предустановленных ролей нет.
-        </div>
-        <Table
-          columns={['Имя', 'Контакт', 'Должность', 'Филиал(ы)', 'Статус', 'Действия']}
-          rows={users}
-          renderRow={(u, i) => (
-            <tr key={i}>
-              <td style={{ fontWeight: 600 }}>{u.name}</td>
-              <td className="small muted">{u.contact}</td>
-              <td>{u.position}</td>
-              <td className="small">{u.branches.join(', ')}</td>
-              <td>
-                <Badge color={u.status === 'active' ? 'green' : 'red'}>
-                  {u.status === 'active' ? 'Активен' : 'Заблокирован'}
-                </Badge>
-              </td>
-              <td>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <Button size="sm" variant="secondary" onClick={() => setAccessDrawer(u)}>Настроить доступ</Button>
-                  <Button size="sm" variant="ghost">Сбросить пароль</Button>
-                  <Button size="sm" variant="danger">{u.status === 'active' ? 'Заблокировать' : 'Разблокировать'}</Button>
-                </div>
-              </td>
-            </tr>
-          )}
-        />
-      </Card>
-
-      {/* Drawer: Настроить доступ */}
-      <Drawer
-        title={accessDrawer ? `Доступ: ${accessDrawer.name}` : ''}
-        open={!!accessDrawer}
-        onClose={() => setAccessDrawer(null)}
-        footer={
-          <>
-            <Button onClick={() => setAccessDrawer(null)}>Сохранить</Button>
-            <Button variant="secondary" onClick={() => setAccessDrawer(null)}>Отмена</Button>
-          </>
-        }
-      >
-        {accessDrawer && (
-          <>
-            <div className="note small" style={{ marginBottom: 16 }}>
-              Доступом управляет владелец индивидуально по каждому разделу. Предустановленных ролей нет.
-            </div>
-
-            <div className="section-title" style={{ marginBottom: 10 }}>Разделы меню</div>
-            {ACCESS_SECTIONS.map((sec) => (
-              <div key={sec} style={{ padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-                <Checkbox
-                  label={sec}
-                  checked={accessMap[accessDrawer.id]?.[sec] ?? true}
-                  onChange={() => toggleSection(accessDrawer.id, sec)}
-                />
-              </div>
-            ))}
-
-            <div className="divider" />
-
-            <Field label="Привязка к филиалам">
-              <Select options={['Центральный', 'Северный', 'Все филиалы']} />
-            </Field>
-
-            <Field label="Видимость данных">
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-                <Chips
-                  items={['Только свои записи', 'Весь филиал', 'Вся сеть']}
-                  active={visibilityMap[accessDrawer.id]}
-                  onChange={(v) => setVisibilityMap((prev) => ({ ...prev, [accessDrawer.id]: v }))}
-                />
-              </div>
-            </Field>
-          </>
-        )}
-      </Drawer>
-
-      {/* Drawer: Журнал действий */}
-      <Drawer
-        title="Журнал действий пользователей"
-        open={auditDrawer}
-        onClose={() => setAuditDrawer(false)}
-        footer={<Button variant="secondary" onClick={() => setAuditDrawer(false)}>Закрыть</Button>}
-      >
-        <Table
-          columns={['Время', 'Пользователь', 'Действие', 'IP']}
-          rows={AUDIT_LOG}
-          renderRow={(r, i) => (
-            <tr key={i}>
-              <td className="small muted">{r.time}</td>
-              <td style={{ fontWeight: 600 }}>{r.user}</td>
-              <td className="small">{r.action}</td>
-              <td className="small faint">{r.ip}</td>
-            </tr>
-          )}
-        />
-      </Drawer>
-
-      {/* Drawer: Пригласить пользователя */}
-      <Drawer
-        title="Пригласить пользователя"
-        open={inviteDrawer}
-        onClose={() => { setInviteDrawer(false); setForm(EMPTY_INVITE) }}
-        footer={
-          <>
-            <Button onClick={handleInviteSave}>Отправить приглашение</Button>
-            <Button variant="secondary" onClick={() => { setInviteDrawer(false); setForm(EMPTY_INVITE) }}>Отмена</Button>
-          </>
-        }
-      >
-        <Field label="Имя">
-          <Input
-            placeholder="Полное имя"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-        </Field>
-        <Field label="E-mail или телефон">
-          <Input
-            placeholder="Введите контакт для отправки приглашения"
-            value={form.contact}
-            onChange={(e) => setForm({ ...form, contact: e.target.value })}
-          />
-        </Field>
-        <Field label="Должность (текст в профиле)">
-          <Input
-            placeholder="Например: Администратор, Мастер, Бухгалтер"
-            value={form.position}
-            onChange={(e) => setForm({ ...form, position: e.target.value })}
-          />
-        </Field>
-        <Field label="Филиал(ы)">
-          <Select
-            options={['Центральный', 'Северный', 'Все филиалы']}
-            value={form.branch}
-            onChange={(e) => setForm({ ...form, branch: e.target.value })}
-          />
-        </Field>
-        <p className="small muted">Пользователь получит ссылку для входа. Доступ к разделам настраивается отдельно.</p>
-      </Drawer>
-    </>
   )
 }
 
@@ -463,94 +218,6 @@ function SectionFinance() {
         <Button size="sm" style={{ marginTop: 12 }}>Сохранить</Button>
       </Card>
     </div>
-  )
-}
-
-// ---- Зарплатные схемы ----
-function SectionSalary() {
-  const [schemes, setSchemes] = useState(INITIAL_SALARY_SCHEMES)
-  const [schemeDrawer, setSchemeDrawer] = useState(false)
-  const [form, setForm] = useState(EMPTY_SCHEME)
-
-  const handleSchemeSave = () => {
-    if (!form.name?.trim()) return
-    const desc = [
-      form.type,
-      form.rate ? `Ставка: ${form.rate} руб./мес` : '',
-      form.percent ? `${form.percent}% с услуг` : '',
-      form.goodsPercent ? `${form.goodsPercent}% с товаров` : '',
-    ].filter(Boolean).join(', ')
-    setSchemes([{ id: Date.now(), name: form.name.trim(), desc }, ...schemes])
-    setForm(EMPTY_SCHEME)
-    setSchemeDrawer(false)
-  }
-
-  return (
-    <Card title="Зарплатные схемы" actions={<Button size="sm" onClick={() => setSchemeDrawer(true)}><IcPlus size={14} /> Добавить схему</Button>}>
-      {schemes.map((s) => (
-        <div key={s.id} className="list-line">
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600 }}>{s.name}</div>
-            <div className="small muted">{s.desc}</div>
-          </div>
-          <Button size="sm" variant="ghost"><IcEdit size={14} /></Button>
-          <Button size="sm" variant="ghost"><IcTrash size={14} /></Button>
-        </div>
-      ))}
-      <p className="small muted" style={{ marginTop: 12 }}>
-        Схемы привязываются к сотрудникам в разделе «Сотрудники». Расчёт зарплаты за период доступен в разделе «Финансы».
-      </p>
-
-      <Drawer
-        title="Новая зарплатная схема"
-        open={schemeDrawer}
-        onClose={() => { setSchemeDrawer(false); setForm(EMPTY_SCHEME) }}
-        footer={
-          <>
-            <Button onClick={handleSchemeSave}>Сохранить</Button>
-            <Button variant="secondary" onClick={() => { setSchemeDrawer(false); setForm(EMPTY_SCHEME) }}>Отмена</Button>
-          </>
-        }
-      >
-        <Field label="Название схемы">
-          <Input
-            placeholder="Например: Мастера (40% + ставка)"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-        </Field>
-        <Field label="Тип расчёта">
-          <Select
-            options={['Фиксированный оклад', 'Только процент с продаж', 'Ставка + процент']}
-            value={form.type}
-            onChange={(e) => setForm({ ...form, type: e.target.value })}
-          />
-        </Field>
-        <div className="grid grid-2">
-          <Field label="Фиксированная ставка (руб./мес)">
-            <Input
-              placeholder="0"
-              value={form.rate}
-              onChange={(e) => setForm({ ...form, rate: e.target.value })}
-            />
-          </Field>
-          <Field label="Процент с услуг (%)">
-            <Input
-              placeholder="0"
-              value={form.percent}
-              onChange={(e) => setForm({ ...form, percent: e.target.value })}
-            />
-          </Field>
-        </div>
-        <Field label="Процент с продажи товаров (%)">
-          <Input
-            placeholder="0"
-            value={form.goodsPercent}
-            onChange={(e) => setForm({ ...form, goodsPercent: e.target.value })}
-          />
-        </Field>
-      </Drawer>
-    </Card>
   )
 }
 

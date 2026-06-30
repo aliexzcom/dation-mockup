@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { PageHead, Button, Segmented, Drawer, Field, Input, Select, Card, Badge, Table } from '../components/ui.jsx'
 import { DateTimePicker } from '../components/DateTimePicker.jsx'
-import { IcArrowL, IcArrowR, IcPlus, IcFilter, IcSearch } from '../components/icons.jsx'
+import { IcArrowL, IcArrowR, IcPlus, IcSearch } from '../components/icons.jsx'
 
 // п. 4.5 — статусы визита
 const STATUSES = {
@@ -46,6 +46,7 @@ export default function Journal() {
   const [drawer, setDrawer] = useState(null) // null | 'new' | appt
   const [appts, setAppts] = useState(INITIAL_APPTS)
   const [payAppt, setPayAppt] = useState(null)
+  const [prefill, setPrefill] = useState(null) // {staffName, time} — клик по пустой ячейке
   const [date, setDate] = useState(new Date(2026, 5, 24)) // «сегодня» в макете — 24 июня 2026
 
   const shiftDate = (delta) => setDate((prev) => {
@@ -64,16 +65,20 @@ export default function Journal() {
     if (pay) setPayAppt(appt)
   }
 
+  // Клик по свободному месту в сетке — новая запись с подстановкой сотрудника и времени
+  const handleNewAt = (staffId, startHour) => {
+    const staffName = STAFF.find((s) => s.id === staffId)?.name || STAFF[0].name
+    setPrefill({ staffName, time: hourToTime(startHour) })
+    setDrawer('new')
+  }
+
   return (
     <>
       <PageHead
         crumbs="Журнал записей"
         title="Журнал записей"
         sub="Календарь записей по сотрудникам и ресурсам: создание, перенос и обработка визитов."
-        actions={<>
-          <Button variant="ghost"><IcFilter size={16} /> Фильтры</Button>
-          <Button onClick={() => setDrawer('new')}><IcPlus size={16} /> Новая запись</Button>
-        </>}
+        actions={<Button onClick={() => { setPrefill(null); setDrawer('new') }}><IcPlus size={16} /> Новая запись</Button>}
       />
 
       {/* Виды: День / Неделя / Месяц / Список (п. 4.2) */}
@@ -88,16 +93,16 @@ export default function Journal() {
         <Button variant="ghost" size="sm" onClick={() => shiftDate(1)}><IcArrowR size={16} /></Button>
       </div>
 
-      {view === 'Список записей' ? <ListView appts={appts} onOpen={setDrawer} /> : <DayGrid appts={appts} onOpen={setDrawer} />}
+      {view === 'Список записей' ? <ListView appts={appts} onOpen={setDrawer} /> : <DayGrid appts={appts} onOpen={setDrawer} onNew={handleNewAt} />}
 
-      <AppointmentDrawer open={!!drawer} appt={drawer === 'new' ? null : drawer} onClose={() => setDrawer(null)} onSave={handleSave} />
+      <AppointmentDrawer open={!!drawer} appt={drawer === 'new' ? null : drawer} prefill={drawer === 'new' ? prefill : null} onClose={() => setDrawer(null)} onSave={handleSave} />
 
       <PaymentDrawer appt={payAppt} open={!!payAppt} onClose={() => setPayAppt(null)} />
     </>
   )
 }
 
-function DayGrid({ appts, onOpen }) {
+function DayGrid({ appts, onOpen, onNew }) {
   return (
     <Card pad={false}>
       <div style={{ display: 'flex', overflowX: 'auto' }}>
@@ -123,7 +128,16 @@ function DayGrid({ appts, onOpen }) {
             {/* тело колонки: линии часов + записи поверх */}
             <div style={{ position: 'relative', height: GRID_H }}>
               {HOURS.map((h, i) => (
-                <div key={h} style={{ position: 'absolute', left: 0, right: 0, top: i * HOUR_H, height: HOUR_H, borderBottom: '1px solid var(--border)', background: i % 2 ? 'var(--bg-soft)' : 'var(--panel)' }} />
+                <div
+                  key={h}
+                  onClick={(e) => {
+                    // 15-минутный шаг по вертикальной позиции клика внутри часа
+                    const q = Math.min(3, Math.max(0, Math.floor(e.nativeEvent.offsetY / (HOUR_H / 4))))
+                    onNew(s.id, h + q * 0.25)
+                  }}
+                  title="Создать запись"
+                  style={{ position: 'absolute', left: 0, right: 0, top: i * HOUR_H, height: HOUR_H, borderBottom: '1px solid var(--border)', background: i % 2 ? 'var(--bg-soft)' : 'var(--panel)', cursor: 'pointer' }}
+                />
               ))}
               {appts.filter((a) => a.staff === s.id).map((a, i) => (
                 <ApptCell key={i} appt={a} onOpen={onOpen} />
@@ -400,7 +414,7 @@ function PaymentDrawer({ appt, open, onClose }) {
 }
 
 // п. 4.4 — карточка записи (создание/редактирование)
-function AppointmentDrawer({ open, appt, onClose, onSave }) {
+function AppointmentDrawer({ open, appt, prefill, onClose, onSave }) {
   const [form, setForm] = useState(EMPTY_APPT)
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
@@ -416,9 +430,10 @@ function AppointmentDrawer({ open, appt, onClose, onSave }) {
         status: STATUSES[appt.status].label, src: appt.src,
       })
     } else {
-      setForm(EMPTY_APPT)
+      // новая запись: если открыли кликом по ячейке — подставляем сотрудника и время
+      setForm({ ...EMPTY_APPT, ...(prefill || {}) })
     }
-  }, [open, appt])
+  }, [open, appt, prefill])
 
   const save = (pay) => {
     if (!form.client.trim() || !form.service.trim()) return

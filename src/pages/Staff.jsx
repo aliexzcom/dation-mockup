@@ -6,13 +6,6 @@ import { ServicePicker } from '../components/ServicePicker.jsx'
 // Категории услуг для специализаций сотрудника
 const SPEC_CATEGORIES = ['Стрижки', 'Окрашивание', 'Уходы для волос', 'Маникюр', 'Педикюр', 'Чистки', 'Пилинги', 'Барбершоп', 'Брови и ресницы', 'Массаж', 'Косметология']
 
-// Разделы системы для настройки доступа сотрудника
-const ACCESS_SECTIONS = [
-  'Журнал записей', 'Telegram Mini App', 'Клиенты (CRM)', 'Услуги', 'Сотрудники',
-  'Финансы', 'Склад', 'Уведомления', 'Настройки', 'Тарифы и оплата',
-  'Аналитика и отчёты', 'Отчёты по товарам',
-]
-const ACCESS_LEVELS = ['Закрыто', 'Просмотр', 'Редактирование']
 import { IcPlus, IcExport, IcEdit, IcTrash } from '../components/icons.jsx'
 
 // ─── Мок-данные ───────────────────────────────────────────────────────────────
@@ -50,12 +43,31 @@ const STAFF_LIST = [
   },
 ]
 
+// Услуги, уже привязанные к мастеру (мок стартового состояния)
 const SERVICES_BY_STAFF = [
-  { name: 'Стрижка женская', duration: '60 мин', price: '1 800 ₽', base: '1 800 ₽' },
-  { name: 'Стрижка + укладка', duration: '90 мин', price: '2 400 ₽', base: '2 200 ₽' },
-  { name: 'Окрашивание (корни)', duration: '120 мин', price: '3 500 ₽', base: '3 200 ₽' },
-  { name: 'Сложное окрашивание', duration: '180 мин', price: '5 800 ₽', base: '5 500 ₽' },
-  { name: 'Укладка', duration: '45 мин', price: '900 ₽', base: '900 ₽' },
+  { name: 'Стрижка женская', duration: '60 мин', price: '1 800 ₽' },
+  { name: 'Стрижка + укладка', duration: '90 мин', price: '2 400 ₽' },
+  { name: 'Окрашивание (корни)', duration: '120 мин', price: '3 500 ₽' },
+  { name: 'Сложное окрашивание', duration: '180 мин', price: '5 800 ₽' },
+  { name: 'Укладка', duration: '45 мин', price: '900 ₽' },
+]
+
+// Каталог услуг сети — из него мастеру привязываются услуги.
+// Длительность/цена здесь — значения по умолчанию, их можно изменить под мастера.
+const CATALOG_SERVICES = [
+  { name: 'Стрижка женская', duration: '60 мин', price: '1 800 ₽' },
+  { name: 'Стрижка мужская', duration: '45 мин', price: '1 200 ₽' },
+  { name: 'Стрижка + укладка', duration: '90 мин', price: '2 400 ₽' },
+  { name: 'Стрижка бороды', duration: '30 мин', price: '800 ₽' },
+  { name: 'Окрашивание (корни)', duration: '120 мин', price: '3 500 ₽' },
+  { name: 'Сложное окрашивание', duration: '180 мин', price: '5 800 ₽' },
+  { name: 'Укладка', duration: '45 мин', price: '900 ₽' },
+  { name: 'Ламинирование волос', duration: '90 мин', price: '3 000 ₽' },
+  { name: 'Маникюр классический', duration: '60 мин', price: '1 500 ₽' },
+  { name: 'Маникюр + гель-лак', duration: '90 мин', price: '2 200 ₽' },
+  { name: 'Педикюр классический', duration: '90 мин', price: '2 500 ₽' },
+  { name: 'Чистка лица аппаратная', duration: '60 мин', price: '3 500 ₽' },
+  { name: 'Химический пилинг', duration: '45 мин', price: '4 000 ₽' },
 ]
 
 const SALARY_HISTORY = [
@@ -78,7 +90,7 @@ const WEEK_DAYS = ['Пн 23.06', 'Вт 24.06', 'Ср 25.06', 'Чт 26.06', 'Пт
 
 // ─── Пустая форма нового сотрудника ───────────────────────────────────────────
 
-const EMPTY_STAFF = { name: '', role: '', phone: '', password: '', branch: 'Центральный', specs: [], status: 'active' }
+const EMPTY_STAFF = { name: '', role: '', phone: '', branch: 'Центральный', specs: [], status: 'active' }
 
 // ─── Основной компонент ────────────────────────────────────────────────────────
 
@@ -125,7 +137,7 @@ export default function Staff() {
       <PageHead
         crumbs="Сотрудники"
         title="Сотрудники"
-        sub="Управление персоналом, графиками работы, зарплатными схемами и доступами."
+        sub="Управление персоналом, графиками работы и зарплатными схемами."
         actions={<>
           <Button variant="ghost"><IcExport size={16} /> Экспорт</Button>
           <Button onClick={() => openDrawer(null)}><IcPlus size={16} /> Сотрудник</Button>
@@ -210,7 +222,27 @@ function StaffDrawer({ open, staff, onClose, onAdd }) {
   const [miniApp, setMiniApp] = useState(true)
   const [notifications, setNotifications] = useState(true)
   const [form, setForm] = useState(EMPTY_STAFF)
-  const [access, setAccess] = useState(() => Object.fromEntries(ACCESS_SECTIONS.map((s) => [s, 'Просмотр'])))
+
+  // Услуги мастера (привязка из каталога сети)
+  const [staffServices, setStaffServices] = useState(
+    SERVICES_BY_STAFF.map((s, i) => ({ id: i + 1, ...s })),
+  )
+  const [adding, setAdding] = useState(false)
+
+  const boundNames = staffServices.map((s) => s.name)
+  const available = CATALOG_SERVICES.filter((c) => !boundNames.includes(c.name))
+
+  function bindServiceByName(name) {
+    const cat = CATALOG_SERVICES.find((c) => c.name === name)
+    if (!cat) return
+    setStaffServices((rows) => [...rows, { id: Date.now(), ...cat }])
+  }
+  function updateService(id, field, val) {
+    setStaffServices((rows) => rows.map((r) => (r.id === id ? { ...r, [field]: val } : r)))
+  }
+  function removeService(id) {
+    setStaffServices((rows) => rows.filter((r) => r.id !== id))
+  }
 
   const isNew = !staff
 
@@ -234,35 +266,10 @@ function StaffDrawer({ open, staff, onClose, onAdd }) {
       </>}
     >
       <Tabs
-        tabs={isNew ? ['Профиль', 'Доступы'] : ['Профиль', 'Доступы', 'График', 'Услуги и цены', 'Зарплата', 'Статистика', 'Расчётный лист']}
+        tabs={isNew ? ['Профиль', 'Услуги и цены'] : ['Профиль', 'График', 'Услуги и цены', 'Зарплата', 'Статистика', 'Расчётный лист']}
         active={innerTab}
         onChange={setInnerTab}
       />
-
-      {innerTab === 'Доступы' && (
-        <div>
-          <div className="section-title">Доступы к разделам</div>
-          <div className="note small" style={{ marginBottom: 10 }}>Для каждого раздела выберите уровень доступа сотрудника.</div>
-          {ACCESS_SECTIONS.map((sec) => (
-            <div key={sec} className="list-line" style={{ justifyContent: 'space-between', gap: 10 }}>
-              <span style={{ flex: 1 }}>{sec}</span>
-              <div className="segmented" style={{ flexShrink: 0 }}>
-                {ACCESS_LEVELS.map((lvl) => (
-                  <button
-                    key={lvl}
-                    type="button"
-                    className={`seg-btn ${access[sec] === lvl ? 'active' : ''}`}
-                    style={{ padding: '5px 10px', fontSize: 12 }}
-                    onClick={() => setAccess((a) => ({ ...a, [sec]: lvl }))}
-                  >
-                    {lvl === 'Редактирование' ? 'Редакт.' : lvl}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {innerTab === 'Профиль' && (
         <div>
@@ -282,28 +289,22 @@ function StaffDrawer({ open, staff, onClose, onAdd }) {
             </Field>
           </div>
           <div className="grid grid-2">
-            <Field label="Телефон (логин для входа)">
+            <Field label="Телефон">
               {isNew
                 ? <Input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: formatUzbPhone(e.target.value) })} placeholder="+998 90 123 45 67" />
                 : <Input type="tel" defaultValue={staff?.phone || ''} placeholder="+998 90 123 45 67" />
               }
             </Field>
-            <Field label="Пароль для входа">
+            <Field label="Филиал">
               {isNew
-                ? <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Минимум 6 символов" />
-                : <Input type="password" placeholder="Оставьте пустым, чтобы не менять" />
+                ? <Select options={['Центральный', 'Северный', 'Южный']} value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} />
+                : <Select options={['Центральный', 'Северный', 'Южный']} />
               }
             </Field>
           </div>
-          <Field label="Филиал">
-            {isNew
-              ? <Select options={['Центральный', 'Северный', 'Южный']} value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} />
-              : <Select options={['Центральный', 'Северный', 'Южный']} />
-            }
-          </Field>
 
           <div className="divider" />
-          <div className="section-title">Специализации и доступ</div>
+          <div className="section-title">Специализации</div>
           <Field label="Специализации (категории услуг)">
             <ServicePicker
               options={SPEC_CATEGORIES.map((c) => ({ name: c }))}
@@ -377,31 +378,50 @@ function StaffDrawer({ open, staff, onClose, onAdd }) {
 
       {innerTab === 'Услуги и цены' && (
         <div>
-          <div className="section-title">Индивидуальные цены и длительность</div>
+          <div className="section-title">Услуги мастера — цена и длительность</div>
           <p className="small muted" style={{ marginBottom: 12 }}>
-            Здесь можно задать персональную цену или длительность для каждой услуги.
-            Если не задано — применяется базовая цена.
+            Привяжите услуги из каталога сети и задайте цену и длительность для этого мастера.
           </p>
           <Card pad={false}>
             <Table
               columns={[
                 { label: 'Услуга' },
-                { label: 'Длительность' },
-                { label: 'Базовая цена', num: true },
-                { label: 'Индив. цена', num: true },
+                { label: 'Длительность', num: true },
+                { label: 'Цена', num: true },
+                { label: '' },
               ]}
-              rows={SERVICES_BY_STAFF}
-              renderRow={(r, i) => (
-                <tr key={i}>
+              rows={staffServices}
+              renderRow={(r) => (
+                <tr key={r.id}>
                   <td>{r.name}</td>
-                  <td>{r.duration}</td>
-                  <td className="num muted">{r.base}</td>
-                  <td className="num"><Input defaultValue={r.price} style={{ width: 90, textAlign: 'right' }} /></td>
+                  <td className="num"><Input value={r.duration} onChange={(e) => updateService(r.id, 'duration', e.target.value)} style={{ width: 90, textAlign: 'right' }} /></td>
+                  <td className="num"><Input value={r.price} onChange={(e) => updateService(r.id, 'price', e.target.value)} style={{ width: 90, textAlign: 'right' }} /></td>
+                  <td><Button size="sm" variant="ghost" title="Убрать" onClick={() => removeService(r.id)}><IcTrash size={14} /></Button></td>
                 </tr>
               )}
             />
           </Card>
-          <Button size="sm" variant="secondary" style={{ marginTop: 12 }}><IcPlus size={14} /> Добавить услугу</Button>
+
+          {adding ? (
+            <div style={{ marginTop: 12 }}>
+              <div className="small muted" style={{ marginBottom: 6 }}>Найдите услугу в каталоге сети и нажмите, чтобы привязать:</div>
+              {available.length > 0 ? (
+                <ServicePicker
+                  options={available.map((c) => ({ name: c.name, price: c.price }))}
+                  value={[]}
+                  onChange={(arr) => bindServiceByName(arr[arr.length - 1])}
+                  placeholder="Поиск услуги в каталоге сети"
+                />
+              ) : (
+                <div className="note small">Все услуги каталога уже привязаны.</div>
+              )}
+              <div style={{ marginTop: 8 }}>
+                <Button size="sm" variant="secondary" onClick={() => setAdding(false)}>Готово</Button>
+              </div>
+            </div>
+          ) : (
+            <Button size="sm" variant="secondary" style={{ marginTop: 12 }} onClick={() => setAdding(true)}><IcPlus size={14} /> Привязать услугу</Button>
+          )}
         </div>
       )}
 

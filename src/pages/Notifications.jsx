@@ -61,13 +61,6 @@ const INIT_TRIGGERS = [
     timing: 'Сразу после создания',
     timingVal: '', on: true,
   },
-  {
-    id: 9, group: 'staff',
-    name: 'Низкий остаток на складе (администратору)',
-    template: 'Внимание: остаток товара «{{товар}}» снизился до {{количество}} ед. Пора пополнить запасы.',
-    timing: 'При достижении минимума',
-    timingVal: '', on: true,
-  },
 ]
 
 // ── Мок-данные рассылок ───────────────────────────────────────────────────────
@@ -130,9 +123,15 @@ function TriggerRow({ tr, onToggle, onEdit }) {
   )
 }
 
+// Сопоставление маршрута раздела и подписи вкладки
+const VIEW_TABS = { auto: 'Автоуведомления', broadcasts: 'Рассылки', settings: 'Настройки' }
+
 // ══════════════════════════════════════════════════════════════════════════════
-export default function Notifications() {
+// view: 'auto' | 'broadcasts' | 'settings' — раздел приходит из меню (маршрута).
+// Если view не задан — показываем вкладки внутри страницы.
+export default function Notifications({ view = null }) {
   const [tab, setTab] = useState('Автоуведомления')
+  const activeTab = view ? VIEW_TABS[view] : tab
   const [triggers, setTriggers] = useState(INIT_TRIGGERS)
   const [editTrigger, setEditTrigger] = useState(null)  // drawer edit trigger
   const [broadcastDrawer, setBroadcastDrawer] = useState(false)
@@ -207,7 +206,7 @@ export default function Notifications() {
         crumbs="Уведомления"
         title="Уведомления"
         sub="Автоматические триггерные уведомления и ручные рассылки через Telegram-бота."
-        actions={tab === 'Рассылки' ? (
+        actions={activeTab === 'Рассылки' ? (
           <Button onClick={() => setBroadcastDrawer(true)}>
             <IcPlus size={16} /> Создать рассылку
           </Button>
@@ -219,10 +218,12 @@ export default function Notifications() {
         Сообщения получают только клиенты, начавшие диалог с ботом и давшие согласие на получение уведомлений.
       </div>
 
-      <Tabs tabs={['Автоуведомления', 'Рассылки', 'Настройки']} active={tab} onChange={setTab} />
+      {!view && (
+        <Tabs tabs={['Автоуведомления', 'Рассылки', 'Настройки']} active={tab} onChange={setTab} />
+      )}
 
       {/* ── Вкладка: Автоуведомления ── */}
-      {tab === 'Автоуведомления' && (
+      {activeTab === 'Автоуведомления' && (
         <>
           <Card title="Уведомления клиентам" style={{ marginBottom: 16 }}>
             {clientTriggers.map(tr => (
@@ -239,7 +240,7 @@ export default function Notifications() {
       )}
 
       {/* ── Вкладка: Рассылки ── */}
-      {tab === 'Рассылки' && (
+      {activeTab === 'Рассылки' && (
         <>
           <div className="note" style={{ marginBottom: 16 }}>
             Рассылки получают только клиенты, начавшие диалог с ботом и давшие согласие. Среднее открытие в Telegram — 70–80%.
@@ -294,7 +295,7 @@ export default function Notifications() {
       )}
 
       {/* ── Вкладка: Настройки ── */}
-      {tab === 'Настройки' && (
+      {activeTab === 'Настройки' && (
         <>
           <div className="grid grid-2" style={{ marginBottom: 16 }}>
             <Card title="Профиль бота">

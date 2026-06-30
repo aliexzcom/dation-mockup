@@ -6,8 +6,8 @@ import MiniApp from './pages/MiniApp.jsx'
 import Clients from './pages/Clients.jsx'
 import Services from './pages/Services.jsx'
 import Staff from './pages/Staff.jsx'
+import Users from './pages/Users.jsx'
 import Finance from './pages/Finance.jsx'
-import Inventory from './pages/Inventory.jsx'
 import Notifications from './pages/Notifications.jsx'
 import Analytics from './pages/Analytics.jsx'
 import Settings from './pages/Settings.jsx'
@@ -16,7 +16,6 @@ import Profile from './pages/Profile.jsx'
 import Login from './pages/Login.jsx'
 import Onboarding from './pages/Onboarding.jsx'
 import SelectBranch from './pages/SelectBranch.jsx'
-import InventoryReportView from './pages/InventoryReportView.jsx'
 
 export default function App() {
   return (
@@ -30,22 +29,27 @@ export default function App() {
         <Route index element={<Navigate to="/business/branches" replace />} />
         <Route path="branches" element={<SelectBranch />} />
         <Route path="clients" element={<Clients />} />
+        <Route path="miniapp" element={<MiniApp view="settings" />} />
+        <Route path="miniapp/preview" element={<MiniApp view="preview" />} />
+        <Route path="miniapp/bot" element={<MiniApp view="bot" />} />
+        <Route path="services" element={<Services business view="list" />} />
+        <Route path="services/categories" element={<Services business view="categories" />} />
+        <Route path="services/pricing" element={<Services business view="pricing" />} />
+        <Route path="services/packages" element={<Services business view="packages" />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="analytics/:group" element={<Analytics />} />
-        <Route path="inventory-reports" element={<Navigate to="/business/inventory-reports/ostatki" replace />} />
-        <Route path="inventory-reports/:slug" element={<InventoryReportView />} />
       </Route>
 
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/journal" replace />} />
         <Route path="journal" element={<Journal />} />
-        <Route path="miniapp" element={<MiniApp />} />
         <Route path="clients" element={<Clients />} />
-        <Route path="services" element={<Services />} />
         <Route path="staff" element={<Staff />} />
+        <Route path="users" element={<Users />} />
         <Route path="finance" element={<Finance />} />
-        <Route path="inventory" element={<Inventory />} />
-        <Route path="notifications" element={<Notifications />} />
+        <Route path="notifications" element={<Notifications view="auto" />} />
+        <Route path="notifications/broadcasts" element={<Notifications view="broadcasts" />} />
+        <Route path="notifications/settings" element={<Notifications view="settings" />} />
         <Route path="settings" element={<Settings />} />
         <Route path="billing" element={<Billing />} />
         <Route path="profile" element={<Profile />} />

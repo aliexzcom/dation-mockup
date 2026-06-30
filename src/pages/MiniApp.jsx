@@ -1,40 +1,44 @@
 import { useState } from 'react'
 import { PageHead, Button, Card, Tabs, Badge, Field, Input, Textarea, Select, Switch, Chips, KV } from '../components/ui.jsx'
-import { IcPlus } from '../components/icons.jsx'
+import { IcPlus, IcTrash } from '../components/icons.jsx'
 
-// Мок-данные услуг
+// Мок-данные услуг (каталог клиентского мини-аппа)
 const SERVICES = [
-  { id: 1, name: 'Стрижка женская', cat: 'Волосы', enabled: true },
-  { id: 2, name: 'Окрашивание', cat: 'Волосы', enabled: true },
-  { id: 3, name: 'Укладка', cat: 'Волосы', enabled: false },
-  { id: 4, name: 'Мужская стрижка', cat: 'Барбер', enabled: true },
-  { id: 5, name: 'Стрижка бороды', cat: 'Барбер', enabled: true },
-  { id: 6, name: 'Маникюр', cat: 'Ногти', enabled: true },
-  { id: 7, name: 'Педикюр', cat: 'Ногти', enabled: false },
-  { id: 8, name: 'Чистка лица', cat: 'Косметология', enabled: true },
+  { id: 's1', name: 'Женская стрижка', cat: 'Парикмахерские услуги', enabled: true },
+  { id: 's2', name: 'Мужская стрижка', cat: 'Парикмахерские услуги', enabled: true },
+  { id: 's3', name: 'Окрашивание в один тон', cat: 'Парикмахерские услуги', enabled: true },
+  { id: 's4', name: 'Укладка', cat: 'Парикмахерские услуги', enabled: true },
+  { id: 's5', name: 'Маникюр с покрытием', cat: 'Ногтевой сервис', enabled: true },
+  { id: 's6', name: 'Педикюр', cat: 'Ногтевой сервис', enabled: true },
+  { id: 's7', name: 'Снятие + укрепление', cat: 'Ногтевой сервис', enabled: false },
+  { id: 's8', name: 'Коррекция и окрашивание бровей', cat: 'Брови и ресницы', enabled: true },
+  { id: 's9', name: 'Ламинирование ресниц', cat: 'Брови и ресницы', enabled: true },
 ]
 
 const STAFF = [
-  { id: 1, name: 'Анна Морозова', role: 'Парикмахер-стилист', enabled: true },
-  { id: 2, name: 'Игорь Лебедев', role: 'Барбер', enabled: true },
-  { id: 3, name: 'Светлана Котова', role: 'Мастер маникюра', enabled: true },
-  { id: 4, name: 'Дмитрий Орлов', role: 'Косметолог', enabled: false },
+  { id: 'm1', name: 'Дильноза Каримова', role: 'Стилист-колорист', enabled: true },
+  { id: 'm2', name: 'Азиз Рахимов', role: 'Барбер', enabled: true },
+  { id: 'm3', name: 'Нигора Саидова', role: 'Мастер маникюра', enabled: true },
+  { id: 'm4', name: 'Сабина Алиева', role: 'Бровист, лешмейкер', enabled: true },
 ]
 
-// Шаги предпросмотра
-const STEPS = [
-  { n: 1, title: 'Филиал', desc: 'Выбор филиала' },
-  { n: 2, title: 'Услуга', desc: 'Категория, услуга, цена и длительность' },
-  { n: 3, title: 'Мастер', desc: 'Выбор сотрудника или «Любой свободный»' },
-  { n: 4, title: 'Дата и время', desc: 'Доступные слоты в календаре' },
-  { n: 5, title: 'Контакты', desc: 'Имя и телефон из Telegram-профиля' },
-  { n: 6, title: 'Подтверждение', desc: 'Итог записи, предоплата / депозит' },
-  { n: 7, title: 'Готово', desc: 'Детали записи, кнопки «Перенести»/«Отменить»' },
+// Рекламные афиши (карусель на главном экране Mini App)
+const BADGES = ['Акция', 'Подарок', 'Новинка', 'Приведи друга', 'Хит']
+const INITIAL_BANNERS = [
+  { id: 'p1', badge: 'Акция', title: 'Окрашивание −20%', sub: 'Весь июль на сложное окрашивание', enabled: true },
+  { id: 'p2', badge: 'Подарок', title: 'Маникюр + педикюр', sub: 'Снятие покрытия бесплатно', enabled: true },
+  { id: 'p3', badge: 'Новинка', title: 'Ламинирование ресниц', sub: 'Эффект на 6–8 недель', enabled: true },
+  { id: 'p4', badge: 'Приведи друга', title: '−15% вам обоим', sub: 'За каждого приглашённого', enabled: false },
 ]
 
-export default function MiniApp() {
+// Сопоставление маршрута раздела и подписи вкладки
+const VIEW_TABS = { settings: 'Настройки', preview: 'Предпросмотр записи', bot: 'Подключение бота' }
+
+// view: 'settings' | 'preview' | 'bot' — раздел приходит из меню (маршрута).
+// Если view не задан — показываем вкладки внутри страницы.
+export default function MiniApp({ view = null }) {
   const [tab, setTab] = useState('Настройки')
-  const [previewStep, setPreviewStep] = useState(1)
+  const activeTab = view ? VIEW_TABS[view] : tab
 
   return (
     <>
@@ -49,15 +53,17 @@ export default function MiniApp() {
         }
       />
 
-      <Tabs
-        tabs={['Настройки', 'Предпросмотр записи', 'Подключение бота']}
-        active={tab}
-        onChange={setTab}
-      />
+      {!view && (
+        <Tabs
+          tabs={['Настройки', 'Предпросмотр записи', 'Подключение бота']}
+          active={tab}
+          onChange={setTab}
+        />
+      )}
 
-      {tab === 'Настройки' && <SettingsTab />}
-      {tab === 'Предпросмотр записи' && <PreviewTab step={previewStep} setStep={setPreviewStep} />}
-      {tab === 'Подключение бота' && <BotTab />}
+      {activeTab === 'Настройки' && <SettingsTab />}
+      {activeTab === 'Предпросмотр записи' && <PreviewTab />}
+      {activeTab === 'Подключение бота' && <BotTab />}
     </>
   )
 }
@@ -67,6 +73,11 @@ export default function MiniApp() {
 function SettingsTab() {
   const [services, setServices] = useState(SERVICES)
   const [staff, setStaff] = useState(STAFF)
+  const [banners, setBanners] = useState(INITIAL_BANNERS)
+  const [featured, setFeatured] = useState(['s1', 's5', 's9'])
+  const [requireDeposit, setRequireDeposit] = useState(true)
+  const [depositType, setDepositType] = useState('Фиксированная сумма')
+  const [depositAmount, setDepositAmount] = useState('50000')
   const [slotStep, setSlotStep] = useState('30 мин')
   const [minBefore, setMinBefore] = useState('2 ч')
   const [maxHorizon, setMaxHorizon] = useState('30 дней')
@@ -76,7 +87,7 @@ function SettingsTab() {
   const [multiLang, setMultiLang] = useState(false)
   const [pdConsent, setPdConsent] = useState('Нажимая «Записаться», вы соглашаетесь с обработкой персональных данных согласно политике конфиденциальности.')
   const [oferta, setOferta] = useState('Запись является офертой. Отмена возможна не позднее чем за 2 часа до начала.')
-  const [welcomeText, setWelcomeText] = useState('Добро пожаловать! Запишитесь онлайн за несколько секунд.')
+  const [welcomeText, setWelcomeText] = useState('Записывайтесь онлайн за пару касаний')
 
   function toggleService(id) {
     setServices(s => s.map(x => x.id === id ? { ...x, enabled: !x.enabled } : x))
@@ -86,8 +97,37 @@ function SettingsTab() {
     setStaff(s => s.map(x => x.id === id ? { ...x, enabled: !x.enabled } : x))
   }
 
+  const toggleBanner = (id) => setBanners(b => b.map(x => x.id === id ? { ...x, enabled: !x.enabled } : x))
+  const updateBanner = (id, field, val) => setBanners(b => b.map(x => x.id === id ? { ...x, [field]: val } : x))
+  const removeBanner = (id) => setBanners(b => b.filter(x => x.id !== id))
+  const addBanner = () => setBanners(b => [...b, { id: 'p' + Date.now(), badge: 'Акция', title: '', sub: '', enabled: true }])
+  const toggleFeatured = (id) => setFeatured(f => f.includes(id) ? f.filter(x => x !== id) : [...f, id])
+
   return (
     <div className="grid">
+
+      {/* Афиши на главной */}
+      <Card
+        title="Афиши на главной"
+        actions={<Button size="sm" variant="ghost" onClick={addBanner}><IcPlus size={14} /> Добавить афишу</Button>}
+      >
+        <div className="note small" style={{ marginBottom: 12 }}>
+          Рекламные обложки в карусели на главном экране Mini App. Клик по афише ведёт на онлайн-запись.
+        </div>
+        {banners.map(b => (
+          <div
+            key={b.id}
+            style={{ display: 'grid', gridTemplateColumns: '160px 1fr 1fr auto auto', gap: 8, alignItems: 'center', marginBottom: 8 }}
+          >
+            <Select options={BADGES} value={b.badge} onChange={e => updateBanner(b.id, 'badge', e.target.value)} />
+            <Input placeholder="Заголовок афиши" value={b.title} onChange={e => updateBanner(b.id, 'title', e.target.value)} />
+            <Input placeholder="Подпись" value={b.sub} onChange={e => updateBanner(b.id, 'sub', e.target.value)} />
+            <Switch on={b.enabled} onClick={() => toggleBanner(b.id)} />
+            <Button size="sm" variant="ghost" onClick={() => removeBanner(b.id)} title="Удалить"><IcTrash size={14} /></Button>
+          </div>
+        ))}
+        {banners.length === 0 && <div className="small muted">Афиш нет. Добавьте первую.</div>}
+      </Card>
 
       {/* Услуги и сотрудники */}
       <div className="grid grid-2" style={{ alignItems: 'start' }}>
@@ -116,6 +156,47 @@ function SettingsTab() {
           ))}
         </Card>
       </div>
+
+      {/* Популярные услуги на главной */}
+      <Card title="Популярные услуги на главной">
+        <div className="note small" style={{ marginBottom: 12 }}>
+          Услуги для блока «Популярные» на главном экране Mini App. Выбираются из включённых услуг.
+        </div>
+        {services.filter(s => s.enabled).map(s => (
+          <div className="list-line" key={s.id}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>{s.name}</div>
+              <div className="small muted">{s.cat}</div>
+            </div>
+            <Switch on={featured.includes(s.id)} onClick={() => toggleFeatured(s.id)} />
+          </div>
+        ))}
+      </Card>
+
+      {/* Предоплата / депозит */}
+      <Card title="Предоплата (депозит)">
+        <div className="list-line" style={{ marginBottom: 8 }}>
+          <Switch on={requireDeposit} onClick={() => setRequireDeposit(v => !v)} />
+          <div>
+            <div style={{ fontWeight: 600 }}>Требовать депозит при записи</div>
+            <div className="small muted">Списывается через Telegram Payments и замораживается до визита</div>
+          </div>
+        </div>
+        {requireDeposit && (
+          <div className="grid grid-2">
+            <Field label="Тип депозита">
+              <Select
+                value={depositType}
+                onChange={e => setDepositType(e.target.value)}
+                options={['Фиксированная сумма', 'Процент от стоимости']}
+              />
+            </Field>
+            <Field label={depositType === 'Процент от стоимости' ? 'Процент (%)' : 'Сумма (сум)'}>
+              <Input type="number" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} />
+            </Field>
+          </div>
+        )}
+      </Card>
 
       {/* Правила слотов */}
       <Card title="Правила слотов и ограничений">
@@ -233,337 +314,60 @@ function SettingsTab() {
 
 // ——— Вкладка «Предпросмотр записи» ——————————————————————————————————————
 
-const PREVIEW_CONTENT = {
-  1: <PreviewStep1 />,
-  2: <PreviewStep2 />,
-  3: <PreviewStep3 />,
-  4: <PreviewStep4 />,
-  5: <PreviewStep5 />,
-  6: <PreviewStep6 />,
-  7: <PreviewStep7 />,
-}
-
-function PreviewTab({ step, setStep }) {
+function PreviewTab() {
+  const [url, setUrl] = useState('http://localhost:5181/')
   return (
     <div className="grid">
-      <div className="note small" style={{ marginBottom: 0 }}>
-        Ниже показан клиентский контур онлайн-записи в Telegram Mini App. Авторизация — автоматически через Telegram-профиль. Mini App поддерживает light/dark тему Telegram. Личный кабинет клиента доступен по кнопке в меню (будущие и прошлые записи). Предоплата через онлайн-эквайринг Telegram Payments.
+      <div className="note small">
+        Это реальный клиентский макет Telegram Mini App (отдельный проект dation-miniapp), встроенный в рамку телефона.
+        Если экран пустой — запустите его дев-сервер (в проекте dation-miniapp выполните npm run dev) и укажите адрес ниже.
       </div>
 
-      {/* Степпер */}
-      <div className="toolbar" style={{ flexWrap: 'wrap', gap: 6 }}>
-        {STEPS.map(s => (
-          <button
-            key={s.n}
-            onClick={() => setStep(s.n)}
-            style={{
-              padding: '5px 14px',
-              borderRadius: 20,
-              border: '1.5px solid',
-              borderColor: step === s.n ? 'var(--primary)' : 'var(--border)',
-              background: step === s.n ? 'var(--primary)' : 'transparent',
-              color: step === s.n ? '#fff' : 'var(--text-muted)',
-              fontWeight: step === s.n ? 700 : 400,
-              fontSize: 13,
-              cursor: 'pointer',
-            }}
-          >
-            {s.n}. {s.title}
-          </button>
-        ))}
+      <div className="toolbar">
+        <span className="small muted">Адрес Mini App:</span>
+        <Input value={url} onChange={(e) => setUrl(e.target.value)} style={{ width: 320 }} />
+        <Button variant="secondary" onClick={() => window.open(url, '_blank', 'noopener')}>Открыть в новой вкладке</Button>
       </div>
 
-      {/* Телефонный макет */}
       <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <div style={{
-          width: 360,
-          minHeight: 520,
-          border: '2px solid var(--border)',
-          borderRadius: 24,
-          overflow: 'hidden',
-          background: '#fff',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
-        }}>
-          {/* Шапка Mini App */}
-          <div style={{
-            background: 'var(--primary)',
-            color: '#fff',
-            padding: '16px 20px 14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}>
-            {step > 1 && (
-              <button
-                onClick={() => setStep(s => s - 1)}
-                style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 0, fontSize: 18, lineHeight: 1 }}
-              >
-                &larr;
-              </button>
-            )}
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 15 }}>Dation — Онлайн-запись</div>
-              <div style={{ fontSize: 12, opacity: 0.85 }}>
-                Шаг {step} из {STEPS.length}: {STEPS[step - 1].desc}
-              </div>
+        {/* Корпус телефона */}
+        <div
+          style={{
+            width: 399,
+            background: 'linear-gradient(145deg, #1C1C22, #0A0A0D)',
+            borderRadius: 56,
+            padding: 12,
+            boxShadow: '0 24px 60px rgba(0,0,0,0.35), inset 0 0 2px rgba(255,255,255,0.25)',
+          }}
+        >
+          {/* Экран */}
+          <div style={{ position: 'relative', width: 375, height: 780, background: '#fff', borderRadius: 44, overflow: 'hidden' }}>
+            {/* Статус-бар */}
+            <div
+              style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 38, zIndex: 5,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '0 24px', fontSize: 13, fontWeight: 700, color: '#111', pointerEvents: 'none',
+              }}
+            >
+              <span>9:41</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 600 }}>5G</span>
+                <span style={{ position: 'relative', width: 18, height: 11, border: '1.5px solid #111', borderRadius: 3, display: 'inline-block' }}>
+                  <span style={{ position: 'absolute', top: 1.5, left: 1.5, bottom: 1.5, width: 9, background: '#111', borderRadius: 1 }} />
+                </span>
+              </span>
             </div>
-          </div>
-
-          {/* Прогресс-бар */}
-          <div style={{ height: 4, background: '#EDE9FE' }}>
-            <div style={{ height: 4, background: 'var(--primary)', width: `${(step / STEPS.length) * 100}%`, transition: 'width .3s' }} />
-          </div>
-
-          {/* Контент шага */}
-          <div style={{ padding: '20px 16px' }}>
-            {PREVIEW_CONTENT[step]}
-          </div>
-
-          {/* Навигация */}
-          <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
-            {step < 7 && (
-              <button
-                onClick={() => setStep(s => Math.min(7, s + 1))}
-                style={{
-                  flex: 1, padding: '10px 0', background: 'var(--primary)',
-                  color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer',
-                }}
-              >
-                {step === 6 ? 'Подтвердить запись' : 'Далее'}
-              </button>
-            )}
-            {step === 7 && (
-              <button
-                onClick={() => setStep(1)}
-                style={{
-                  flex: 1, padding: '10px 0', background: 'var(--primary)',
-                  color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer',
-                }}
-              >
-                Записаться ещё раз
-              </button>
-            )}
+            {/* Динамический остров */}
+            <div style={{ position: 'absolute', top: 9, left: '50%', transform: 'translateX(-50%)', width: 118, height: 30, background: '#000', borderRadius: 16, zIndex: 6 }} />
+            {/* Экран приложения (мини-апп во весь экран) */}
+            <iframe
+              src={url}
+              title="Telegram Mini App — предпросмотр"
+              style={{ position: 'absolute', top: 38, left: 0, width: 375, height: 742, border: 0, display: 'block' }}
+            />
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function PreviewStep1() {
-  const branches = [
-    { name: 'Центральный филиал', addr: 'ул. Пушкина, 12', dist: '1.2 км' },
-    { name: 'Северный филиал', addr: 'пр. Победы, 44', dist: '3.7 км' },
-    { name: 'Южный филиал', addr: 'ул. Садовая, 8', dist: '5.1 км' },
-  ]
-  const [sel, setSel] = useState(0)
-  return (
-    <div>
-      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12 }}>Выберите филиал</div>
-      {branches.map((b, i) => (
-        <div
-          key={i}
-          onClick={() => setSel(i)}
-          style={{
-            padding: '12px 14px', borderRadius: 12, marginBottom: 8, cursor: 'pointer',
-            border: `2px solid ${sel === i ? 'var(--primary)' : 'var(--border)'}`,
-            background: sel === i ? '#F5F3FF' : '#fff',
-          }}
-        >
-          <div style={{ fontWeight: 600 }}>{b.name}</div>
-          <div className="small muted">{b.addr}</div>
-          <div className="small faint">{b.dist} от вас</div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function PreviewStep2() {
-  const cats = ['Волосы', 'Барбер', 'Ногти', 'Косметология']
-  const [cat, setCat] = useState('Волосы')
-  const [sel, setSel] = useState(null)
-  const items = [
-    { name: 'Стрижка', price: '800 р.', dur: '45 мин' },
-    { name: 'Окрашивание', price: '3 500 р.', dur: '2 ч 30 мин' },
-    { name: 'Укладка', price: '600 р.', dur: '30 мин' },
-  ]
-  return (
-    <div>
-      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10 }}>Выберите услугу</div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-        {cats.map(c => (
-          <span
-            key={c}
-            onClick={() => setCat(c)}
-            style={{
-              padding: '4px 12px', borderRadius: 16, fontSize: 13, cursor: 'pointer',
-              background: cat === c ? 'var(--primary)' : '#F3F4F6',
-              color: cat === c ? '#fff' : 'var(--text-muted)',
-              fontWeight: cat === c ? 600 : 400,
-            }}
-          >{c}</span>
-        ))}
-      </div>
-      {items.map((it, i) => (
-        <div
-          key={i}
-          onClick={() => setSel(i)}
-          style={{
-            padding: '11px 13px', borderRadius: 10, marginBottom: 7, cursor: 'pointer',
-            border: `2px solid ${sel === i ? 'var(--primary)' : 'var(--border)'}`,
-            background: sel === i ? '#F5F3FF' : '#fff',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}
-        >
-          <div>
-            <div style={{ fontWeight: 600 }}>{it.name}</div>
-            <div className="small muted">{it.dur}</div>
-          </div>
-          <div style={{ fontWeight: 700, color: 'var(--primary)' }}>{it.price}</div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function PreviewStep3() {
-  const [sel, setSel] = useState(null)
-  const masters = [
-    { name: 'Любой свободный мастер', role: '', rating: null, ini: '?' },
-    { name: 'Анна Морозова', role: 'Парикмахер-стилист', rating: '4.9', ini: 'АМ' },
-    { name: 'Игорь Лебедев', role: 'Барбер', rating: '4.8', ini: 'ИЛ' },
-  ]
-  return (
-    <div>
-      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12 }}>Выберите мастера</div>
-      {masters.map((m, i) => (
-        <div
-          key={i}
-          onClick={() => setSel(i)}
-          style={{
-            padding: '11px 13px', borderRadius: 12, marginBottom: 8, cursor: 'pointer',
-            border: `2px solid ${sel === i ? 'var(--primary)' : 'var(--border)'}`,
-            background: sel === i ? '#F5F3FF' : '#fff',
-            display: 'flex', gap: 12, alignItems: 'center',
-          }}
-        >
-          <div className="avatar-sm" style={{ flexShrink: 0 }}>{m.ini}</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600 }}>{m.name}</div>
-            {m.role && <div className="small muted">{m.role}</div>}
-          </div>
-          {m.rating && (
-            <div style={{ fontWeight: 700, color: '#F59E0B', fontSize: 13 }}>{m.rating}</div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function PreviewStep4() {
-  const slots = ['09:00', '09:30', '10:00', '10:30', '12:00', '14:00', '14:30', '15:00', '16:30', '17:00']
-  const [sel, setSel] = useState(null)
-  return (
-    <div>
-      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Выберите дату и время</div>
-      <div className="small muted" style={{ marginBottom: 12 }}>Вторник, 24 июня 2026</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 7 }}>
-        {slots.map((s, i) => (
-          <div
-            key={i}
-            onClick={() => setSel(i)}
-            style={{
-              textAlign: 'center', padding: '9px 0', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600,
-              border: `2px solid ${sel === i ? 'var(--primary)' : 'var(--border)'}`,
-              background: sel === i ? 'var(--primary)' : '#fff',
-              color: sel === i ? '#fff' : 'var(--text)',
-            }}
-          >{s}</div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function PreviewStep5() {
-  return (
-    <div>
-      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Ваши контакты</div>
-      <div className="small muted" style={{ marginBottom: 14 }}>Данные получены из вашего Telegram-профиля</div>
-      <Field label="Имя"><Input defaultValue="Мария Петрова" /></Field>
-      <Field label="Телефон"><Input defaultValue="+7 912 345-67-89" /></Field>
-      <Field label="Комментарий к записи"><Textarea placeholder="Пожелания мастеру (необязательно)" rows={2} /></Field>
-      <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-faint)' }}>
-        Нажимая «Далее», вы соглашаетесь с обработкой персональных данных согласно политике конфиденциальности.
-      </div>
-    </div>
-  )
-}
-
-function PreviewStep6() {
-  const [paid, setPaid] = useState(false)
-  return (
-    <div>
-      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12 }}>Подтвердите запись</div>
-      <KV items={[
-        ['Филиал', 'Центральный, ул. Пушкина, 12'],
-        ['Услуга', 'Стрижка женская'],
-        ['Мастер', 'Анна Морозова'],
-        ['Дата', 'Вт, 24 июня 2026'],
-        ['Время', '10:00 — 10:45'],
-        ['Стоимость', '800 р.'],
-      ]} />
-      <div className="divider" />
-      <div style={{ fontWeight: 600, marginBottom: 8 }}>Предоплата</div>
-      <div className="list-line" style={{ marginBottom: 6 }}>
-        <Switch on={paid} onClick={() => setPaid(v => !v)} />
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 13 }}>Внести предоплату сейчас</div>
-          <div className="small muted">200 р. через Telegram Payments</div>
-        </div>
-      </div>
-      {paid && (
-        <div className="note small">
-          Оплата через встроенный эквайринг Telegram. После подтверждения средства будут заморожены до визита.
-        </div>
-      )}
-    </div>
-  )
-}
-
-function PreviewStep7() {
-  return (
-    <div style={{ textAlign: 'center', paddingTop: 8 }}>
-      <div style={{
-        width: 56, height: 56, borderRadius: '50%', background: '#DCFCE7',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        margin: '0 auto 14px', fontSize: 26,
-      }}>
-        <span style={{ color: '#16A34A', fontSize: 28, lineHeight: 1 }}>&#10003;</span>
-      </div>
-      <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>Запись создана</div>
-      <div className="muted small" style={{ marginBottom: 16 }}>Мы отправим напоминание за 24 ч и за 1 ч до визита</div>
-      <KV items={[
-        ['Услуга', 'Стрижка женская'],
-        ['Мастер', 'Анна Морозова'],
-        ['Дата', 'Вт, 24 июня 2026'],
-        ['Время', '10:00'],
-        ['Адрес', 'ул. Пушкина, 12'],
-      ]} />
-      <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'center' }}>
-        <button style={{
-          flex: 1, padding: '9px 0', borderRadius: 10, border: '1.5px solid var(--border)',
-          background: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer',
-        }}>Перенести</button>
-        <button style={{
-          flex: 1, padding: '9px 0', borderRadius: 10, border: '1.5px solid #FCA5A5',
-          background: '#FEF2F2', color: '#EF4444', fontWeight: 600, fontSize: 13, cursor: 'pointer',
-        }}>Отменить</button>
-      </div>
-      <div className="small faint" style={{ marginTop: 12 }}>
-        Личный кабинет: все ваши записи доступны в главном меню Mini App.
       </div>
     </div>
   )

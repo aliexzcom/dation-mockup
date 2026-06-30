@@ -59,20 +59,9 @@ const STAFF_PRICES = [
   { staff: 'Светлана Котова', price: '2 200 ₽', commission: '35%' },
 ]
 
-const CONSUMABLES = [
-  { name: 'Краситель (туба)', qty: 1, unit: 'шт.' },
-  { name: 'Окислитель 6%', qty: 60, unit: 'мл' },
-  { name: 'Перчатки нитриловые', qty: 2, unit: 'шт.' },
-  { name: 'Фольга', qty: 20, unit: 'листов' },
-]
-
 const EMPTY_SERVICE = {
   name: '',
   cat: 'Выберите категорию',
-  priceFrom: '',
-  priceTo: '',
-  duration: '',
-  buffer: '',
   description: '',
 }
 
@@ -101,17 +90,15 @@ function ServiceDrawer({ service, open, onClose, isNew, onSave }) {
   // (для просмотра/редактирования существующей — используем данные service)
   function handleSave() {
     if (!form.name.trim()) return
-    const priceStr = form.priceTo
-      ? `${form.priceFrom || '0'}–${form.priceTo} ₽`
-      : `${form.priceFrom || '0'} ₽`
+    // Услуга — это каталожная позиция сети. Цена и длительность задаются у мастера.
     onSave({
       id: Date.now(),
       name: form.name.trim(),
       cat: form.cat !== 'Выберите категорию' ? form.cat : '—',
       catId: null,
-      price: priceStr,
-      duration: parseInt(form.duration) || 0,
-      buffer: parseInt(form.buffer) || 0,
+      price: '—',
+      duration: 0,
+      buffer: 0,
       miniapp: miniApp,
       vat: vatOn,
     })
@@ -137,8 +124,6 @@ function ServiceDrawer({ service, open, onClose, isNew, onSave }) {
       footer={
         <div style={{ display: 'flex', gap: 8 }}>
           <Button variant="secondary" onClick={handleClose}>Отмена</Button>
-          {!isNew && <Button variant="ghost">Дублировать</Button>}
-          {!isNew && <Button variant="ghost">Архивировать</Button>}
           <div style={{ flex: 1 }} />
           <Button onClick={isNew ? handleSave : onClose}>Сохранить</Button>
         </div>
@@ -146,6 +131,10 @@ function ServiceDrawer({ service, open, onClose, isNew, onSave }) {
     >
       {isNew ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="note small">
+            Услуга создаётся на уровне сети и автоматически появляется во всех филиалах.
+            Цена и длительность задаются у каждого мастера во вкладке «Услуги и цены».
+          </div>
           <Field label="Название услуги">
             <Input
               placeholder="Например: Женская стрижка"
@@ -168,45 +157,6 @@ function ServiceDrawer({ service, open, onClose, isNew, onSave }) {
             />
           </Field>
 
-          <div className="section-title">Цена</div>
-          <div className="grid grid-2">
-            <Field label="Цена от (₽)">
-              <Input
-                type="number"
-                placeholder="1 200"
-                value={form.priceFrom}
-                onChange={(e) => setForm({ ...form, priceFrom: e.target.value })}
-              />
-            </Field>
-            <Field label="Цена до (₽)">
-              <Input
-                type="number"
-                placeholder="3 500"
-                value={form.priceTo}
-                onChange={(e) => setForm({ ...form, priceTo: e.target.value })}
-              />
-            </Field>
-          </div>
-
-          <div className="grid grid-2">
-            <Field label="Длительность (мин)">
-              <Input
-                type="number"
-                placeholder="60"
-                value={form.duration}
-                onChange={(e) => setForm({ ...form, duration: e.target.value })}
-              />
-            </Field>
-            <Field label="Подготовка после клиента (мин)">
-              <Input
-                type="number"
-                placeholder="10"
-                value={form.buffer}
-                onChange={(e) => setForm({ ...form, buffer: e.target.value })}
-              />
-            </Field>
-          </div>
-
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Switch on={vatOn} onClick={() => setVatOn(!vatOn)} />
             <span>Включить НДС в стоимость</span>
@@ -228,13 +178,10 @@ function ServiceDrawer({ service, open, onClose, isNew, onSave }) {
             <Textarea placeholder="Краткое описание для клиента..." />
           </Field>
 
-          <div className="section-title">Цена</div>
-          <div className="grid grid-2">
-            <Field label="Цена от (₽)"><Input type="number" placeholder="1 200" /></Field>
-            <Field label="Цена до (₽)"><Input type="number" placeholder="3 500" /></Field>
+          <div className="note small">
+            Цена и длительность услуги задаются индивидуально для каждого мастера.
           </div>
-
-          <div className="section-title">Прайс по сотрудникам</div>
+          <div className="section-title">Цена по сотрудникам</div>
           <Table
             columns={[{ label: 'Сотрудник' }, { label: 'Цена', num: true }, { label: '% мастера', num: true }]}
             rows={STAFF_PRICES}
@@ -247,14 +194,6 @@ function ServiceDrawer({ service, open, onClose, isNew, onSave }) {
             )}
           />
 
-          <div className="grid grid-2">
-            <Field label="Длительность (мин)"><Input type="number" placeholder="60" defaultValue={service ? service.duration : ''} /></Field>
-            <Field label="Подготовка после клиента (мин)"><Input type="number" placeholder="10" defaultValue={service ? service.buffer : ''} /></Field>
-          </div>
-
-          <Field label="Требуемый ресурс / оборудование">
-            <Input placeholder="Например: Кресло барбера, УФ-лампа" />
-          </Field>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Switch on={vatOn} onClick={() => setVatOn(!vatOn)} />
@@ -268,23 +207,6 @@ function ServiceDrawer({ service, open, onClose, isNew, onSave }) {
           <Field label="Изображение услуги">
             <Button variant="secondary" size="sm">Загрузить изображение</Button>
           </Field>
-
-          <div className="divider" />
-          <div className="section-title">Техкарта — связанные расходники</div>
-          <Table
-            columns={[{ label: 'Товар / расходник' }, { label: 'Норма' }, { label: 'Ед.' }]}
-            rows={CONSUMABLES}
-            renderRow={(r, i) => (
-              <tr key={i}>
-                <td>{r.name}</td>
-                <td>{r.qty}</td>
-                <td>{r.unit}</td>
-              </tr>
-            )}
-          />
-          <div>
-            <Button size="sm"><IcPlus size={14} /> Добавить расходник</Button>
-          </div>
         </div>
       )}
     </Drawer>
@@ -345,11 +267,22 @@ function CategoryDrawer({ open, onClose, onSave }) {
   )
 }
 
+// Сопоставление маршрута раздела и подписи вкладки
+const VIEW_TABS = {
+  list: 'Список услуг',
+  categories: 'Категории',
+  pricing: 'Прайс-лист',
+  packages: 'Пакеты услуг',
+}
+
 // --- Главная страница ---
-export default function Services() {
+// view: 'list' | 'categories' | 'pricing' | 'packages' — раздел приходит из меню (маршрута).
+// Если view не задан (уровень бизнеса) — показываем вкладки внутри страницы.
+export default function Services({ business = false, view = null }) {
   const [services, setServices] = useState(INITIAL_SERVICES)
   const [categories, setCategories] = useState(INITIAL_CATEGORIES)
   const [tab, setTab] = useState('Список услуг')
+  const activeTab = view ? VIEW_TABS[view] : tab
   const [selectedCat, setSelectedCat] = useState(null)
   const [selectedService, setSelectedService] = useState(null)
   const [newServiceOpen, setNewServiceOpen] = useState(false)
@@ -390,19 +323,23 @@ export default function Services() {
       <PageHead
         crumbs="Услуги"
         title="Услуги"
-        sub="Каталог услуг, прайс-лист, пакеты и техкарты."
+        sub={business
+          ? 'Каталог услуг сети. Услуга, созданная здесь, автоматически появляется во всех филиалах.'
+          : 'Каталог услуг, прайс-лист и пакеты.'}
         actions={
           <Button variant="ghost" size="sm"><IcExport size={16} /> Импорт прайса</Button>
         }
       />
 
-      <Tabs
-        tabs={['Список услуг', 'Категории', 'Прайс-лист', 'Пакеты услуг']}
-        active={tab}
-        onChange={setTab}
-      />
+      {!view && (
+        <Tabs
+          tabs={['Список услуг', 'Категории', 'Прайс-лист', 'Пакеты услуг']}
+          active={tab}
+          onChange={setTab}
+        />
+      )}
 
-      {tab === 'Список услуг' && (
+      {activeTab === 'Список услуг' && (
         <div style={{ marginTop: 16 }}>
           <div className="toolbar">
             <Select
@@ -414,7 +351,7 @@ export default function Services() {
               }}
             />
             <div className="spacer" />
-            <Button size="sm" onClick={() => setNewServiceOpen(true)}><IcPlus size={16} /> Услуга</Button>
+            {business && <Button size="sm" onClick={() => setNewServiceOpen(true)}><IcPlus size={16} /> Услуга</Button>}
           </div>
           <Card pad={false}>
             <Table
@@ -451,12 +388,6 @@ export default function Services() {
                       <Button variant="ghost" size="sm" onClick={() => setSelectedService(r)}>
                         <IcEdit size={14} />
                       </Button>
-                      <Button variant="ghost" size="sm" title="Дублировать">
-                        <IcExport size={14} />
-                      </Button>
-                      <Button variant="ghost" size="sm" title="Архивировать">
-                        <IcTrash size={14} />
-                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -466,11 +397,11 @@ export default function Services() {
         </div>
       )}
 
-      {tab === 'Категории' && (
+      {activeTab === 'Категории' && (
         <div style={{ marginTop: 16 }}>
           <Card
             title="Категории услуг"
-            actions={<Button size="sm" onClick={() => setNewCatOpen(true)}><IcPlus size={14} /> Категория</Button>}
+            actions={business ? <Button size="sm" onClick={() => setNewCatOpen(true)}><IcPlus size={14} /> Категория</Button> : undefined}
           >
             {rootCats.map((rc) => (
               <div key={rc.id}>
@@ -494,7 +425,7 @@ export default function Services() {
         </div>
       )}
 
-      {tab === 'Прайс-лист' && (
+      {activeTab === 'Прайс-лист' && (
         <div style={{ marginTop: 16 }}>
           {rootCats.map((rc) => {
             const catIds = [rc.id, ...childCats(rc.id).map((c) => c.id)]
@@ -525,11 +456,13 @@ export default function Services() {
         </div>
       )}
 
-      {tab === 'Пакеты услуг' && (
+      {activeTab === 'Пакеты услуг' && (
         <div style={{ marginTop: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-            <Button size="sm" onClick={() => setNewPkgOpen(true)}><IcPlus size={16} /> Новый пакет</Button>
-          </div>
+          {business && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+              <Button size="sm" onClick={() => setNewPkgOpen(true)}><IcPlus size={16} /> Новый пакет</Button>
+            </div>
+          )}
           <div className="grid grid-2" style={{ gap: 16 }}>
             {packages.map((pkg) => (
               <Card

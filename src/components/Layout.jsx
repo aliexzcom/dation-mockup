@@ -1,23 +1,39 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { NAV_ICONS, IcBell, IcLogout } from './icons.jsx'
+import { useState } from 'react'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { IcCalendar, IcUsers, IcStaff, IcMoney, IcBell, IcGear, IcCard, IcChevron, IcLogout } from './icons.jsx'
 import { ThemeToggle } from './ThemeToggle.jsx'
 
-// Разделы левого меню — строго по п. 3.2 ТЗ
+// Разделы левого меню. Часть пунктов — раскрывающиеся группы (аккордеон),
+// как «Аналитика и отчёты» на уровне бизнеса.
 const NAV = [
-  { to: '/journal', key: 'journal', label: 'Журнал записей' },
-  { to: '/miniapp', key: 'miniapp', label: 'Telegram Mini App', badge: 3 }, // индикатор новых записей из Mini App (п. 3.1)
-  { to: '/clients', key: 'clients', label: 'Клиенты (CRM)' },
-  { to: '/services', key: 'services', label: 'Услуги' },
-  { to: '/staff', key: 'staff', label: 'Сотрудники' },
-  { to: '/finance', key: 'finance', label: 'Финансы' },
-  { to: '/inventory', key: 'inventory', label: 'Склад' },
-  { to: '/notifications', key: 'notifications', label: 'Уведомления' },
-  { to: '/settings', key: 'settings', label: 'Настройки' },
-  { to: '/billing', key: 'billing', label: 'Тарифы и оплата' },
+  { to: '/journal', label: 'Журнал записей', Ico: IcCalendar },
+  { to: '/clients', label: 'Клиенты (CRM)', Ico: IcUsers },
+  { key: 'team', label: 'Команда', Ico: IcStaff, children: [
+    { to: '/staff', label: 'Сотрудники' },
+    { to: '/users', label: 'Пользователи' },
+  ] },
+  { to: '/finance', label: 'Финансы', Ico: IcMoney },
+  { key: 'notifications', label: 'Уведомления', Ico: IcBell, children: [
+    { to: '/notifications', label: 'Автоуведомления', end: true },
+    { to: '/notifications/broadcasts', label: 'Рассылки' },
+    { to: '/notifications/settings', label: 'Настройки' },
+  ] },
+  { to: '/settings', label: 'Настройки', Ico: IcGear },
+  { to: '/billing', label: 'Тарифы и оплата', Ico: IcCard },
 ]
 
 export default function Layout() {
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Какая группа содержит активный маршрут — её и раскрываем по умолчанию
+  const activeGroup = NAV.find(
+    (n) => n.children && n.children.some((c) => location.pathname.startsWith(c.to)),
+  )?.key ?? null
+  // Аккордеон: одновременно раскрыта только одна группа
+  const [openMenu, setOpenMenu] = useState(activeGroup)
+  const toggle = (key) => setOpenMenu((o) => (o === key ? null : key))
+
   return (
     <div className="app">
       <aside className="sidebar">
@@ -25,14 +41,52 @@ export default function Layout() {
           <div className="brand-mark">D</div>
           <span className="brand-text">Dation</span>
         </div>
+        <div style={{ padding: '6px 8px 0' }}>
+          <button
+            className="nav-item"
+            style={{ width: '100%', border: 0, background: 'var(--violet-50)', color: 'var(--violet)', fontWeight: 600 }}
+            title="Выйти на уровень бизнеса"
+            onClick={() => navigate('/business/branches')}
+          >
+            <span className="nav-ico"><IcLogout size={18} /></span>
+            <span className="nav-label">На уровень бизнеса</span>
+          </button>
+        </div>
         <nav className="sidebar-nav">
           {NAV.map((n) => {
-            const Ico = NAV_ICONS[n.key]
+            // Раскрывающаяся группа
+            if (n.children) {
+              const groupActive = n.children.some((c) => location.pathname.startsWith(c.to))
+              const open = openMenu === n.key
+              return (
+                <div key={n.key}>
+                  <button
+                    className={`nav-item ${groupActive ? 'active' : ''}`}
+                    style={{ width: '100%', border: 0, background: groupActive ? undefined : 'transparent' }}
+                    onClick={() => toggle(n.key)}
+                  >
+                    <span className="nav-ico"><n.Ico size={18} /></span>
+                    <span className="nav-label">{n.label}</span>
+                    <span className={`nav-chev ${open ? 'open' : ''}`}><IcChevron size={16} /></span>
+                  </button>
+                  {open && (
+                    <div className="nav-sub">
+                      {n.children.map((c) => (
+                        <NavLink key={c.to} to={c.to} end={c.end} className={({ isActive }) => `nav-subitem ${isActive ? 'active' : ''}`}>
+                          <span className="nav-label">{c.label}</span>
+                          {c.badge ? <span className="nav-badge">{c.badge}</span> : null}
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            }
+            // Обычная ссылка
             return (
               <NavLink key={n.to} to={n.to} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-                <span className="nav-ico"><Ico size={18} /></span>
+                <span className="nav-ico"><n.Ico size={18} /></span>
                 <span className="nav-label">{n.label}</span>
-                {n.badge ? <span className="nav-badge">{n.badge}</span> : null}
               </NavLink>
             )
           })}
@@ -45,9 +99,6 @@ export default function Layout() {
             <IcBell size={18} /><span className="dot" />
           </button>
           <ThemeToggle compact />
-          <button className="icon-btn" title="Выйти из филиала" onClick={() => navigate('/business/branches')}>
-            <IcLogout size={18} />
-          </button>
         </div>
       </aside>
 

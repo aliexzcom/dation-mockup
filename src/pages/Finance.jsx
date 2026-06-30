@@ -1,45 +1,115 @@
-import { useState } from 'react'
-import { PageHead, Button, Card, Stat, Badge, Table, Field, Input, Select, Chips, Drawer, KV } from '../components/ui.jsx'
+import { useState, useEffect } from 'react'
+import { PageHead, Button, Card, Stat, Badge, Table, Field, Input, Textarea, Select, Chips, Drawer, KV } from '../components/ui.jsx'
 import { DatePicker } from '../components/DatePicker.jsx'
-import { IcPlus, IcExport } from '../components/icons.jsx'
+import { IcPlus, IcExport, IcEdit, IcTrash, IcArrowDownLeft, IcArrowUpRight, IcArrowSwap, IcClock, IcMoney, IcUsers } from '../components/icons.jsx'
 
-// ─── Мок-данные ───────────────────────────────────────────────────────────────
+// ─── Модель операции (pair-entry, по мотивам Evo POS) ──────────────────────────
+// Каждая операция двигает сумму от источника к получателю. Вид операции —
+// производный от типов сторон, а не хранится отдельно (как в evolution).
+//   safe → safe   = перевод (инкассация, размен)
+//   X    → safe   = приход (оплата визита, продажа, внесение)
+//   safe → X      = расход (закупка, аренда, выплата ЗП, возврат клиенту)
+//   X    → X      = начисление (бух. проводка без движения денег)
+// Тип стороны: 'safe' — касса/сейф; 'cp' — контрагент (клиент, поставщик, сотрудник).
 
-const TX_TYPES = {
-  sale_service: { label: 'Продажа услуги', color: 'green' },
-  sale_goods:   { label: 'Продажа товара', color: 'green' },
-  refund:       { label: 'Возврат',         color: 'red' },
-  income:       { label: 'Доход',           color: 'blue' },
-  expense:      { label: 'Расход',          color: 'gray' },
-  deposit:      { label: 'Внесение',        color: '' },
-  withdraw:     { label: 'Изъятие',         color: 'amber' },
+const SAFES = [
+  { id: 'safe_main', type: 'safe', name: 'Касса основная' },
+  { id: 'safe_box', type: 'safe', name: 'Сейф' },
+  { id: 'safe_reg2', type: 'safe', name: 'Касса №2' },
+]
+
+const COUNTERPARTIES = [
+  { id: 'cp_client', type: 'cp', name: 'Клиент (визит)' },
+  { id: 'cp_kerastase', type: 'cp', name: 'Поставщик «Kerastase»' },
+  { id: 'cp_landlord', type: 'cp', name: 'Арендодатель' },
+  { id: 'cp_morozova', type: 'cp', name: 'А. Морозова (сотрудник)' },
+  { id: 'cp_kotova', type: 'cp', name: 'С. Котова (сотрудник)' },
+  { id: 'cp_payroll', type: 'cp', name: 'Фонд оплаты труда' },
+  { id: 'cp_tax', type: 'cp', name: 'Налоговая' },
+]
+
+const ALL_ENTITIES = [...SAFES, ...COUNTERPARTIES]
+const entityById = (id) => ALL_ENTITIES.find((e) => e.id === id)
+const entitiesForType = (t) => (t === 'safe' ? SAFES : COUNTERPARTIES)
+const ENTITY_LABEL = { safe: 'касса', cp: 'контрагент' }
+const entityIcon = (type) => (type === 'safe' ? IcMoney : IcUsers)
+
+// Виды операций
+const KIND = {
+  in: { label: 'Приход', color: 'green', sign: '+' },
+  out: { label: 'Расход', color: 'red', sign: '−' },
+  transfer: { label: 'Перевод', color: 'gray', sign: '' },
+  accrual: { label: 'Начисление', color: 'blue', sign: '' },
+}
+const KIND_BY_LABEL = { Приход: 'in', Расход: 'out', Перевод: 'transfer', Начисление: 'accrual' }
+// Типы сторон по виду — для формы создания: [источник, получатель]
+const KIND_SIDES = { in: ['cp', 'safe'], out: ['safe', 'cp'], transfer: ['safe', 'safe'], accrual: ['cp', 'cp'] }
+
+function txKind(srcType, dstType) {
+  const s = srcType === 'safe'
+  const d = dstType === 'safe'
+  if (s && d) return 'transfer'
+  if (!s && d) return 'in'
+  if (s && !d) return 'out'
+  return 'accrual'
+}
+
+function kindIcon(kind) {
+  switch (kind) {
+    case 'in': return IcArrowDownLeft
+    case 'out': return IcArrowUpRight
+    case 'transfer': return IcArrowSwap
+    default: return IcClock
+  }
+}
+
+// Статусы документа — единая тройка проекта
+const STATUS = {
+  draft: { label: 'Черновик', color: 'amber' },
+  published: { label: 'Опубликовано', color: 'green' },
+  cancelled: { label: 'Отменено', color: 'gray' },
 }
 
 const PAY_METHODS = ['Наличные', 'Карта', 'Перевод', 'Онлайн (Mini App)', 'Смешанная']
 
+const fmt = (n) => n.toLocaleString('ru-RU') + ' ₽'
+const amountColor = (kind) =>
+  kind === 'in' ? 'var(--green, #16A34A)' : kind === 'out' ? 'var(--red, #DC2626)' : 'inherit'
 
-function fmt(n) {
-  return n.toLocaleString('ru-RU') + ' ₽'
+const two = (n) => String(n).padStart(2, '0')
+function todayDt() {
+  const d = new Date()
+  return `${two(d.getDate())}.${two(d.getMonth() + 1)}.${d.getFullYear()} ${two(d.getHours())}:${two(d.getMinutes())}`
+}
+function buildDt(dateStr, fallback) {
+  if (!dateStr) return fallback
+  const [y, m, d] = dateStr.split('-')
+  const t = new Date()
+  return `${d}.${m}.${y} ${two(t.getHours())}:${two(t.getMinutes())}`
 }
 
-const INITIAL_TRANSACTIONS = [
-  { id: 1,  dt: '24.06.2026 09:45', type: 'sale_service', desc: 'Стрижка + укладка',    client: 'Мария П.',      staff: 'А. Морозова', method: 'Карта',          amount: 2400,  dir: 'in' },
-  { id: 2,  dt: '24.06.2026 10:30', type: 'sale_goods',   desc: 'Шампунь Kerastase',    client: 'Мария П.',      staff: 'А. Морозова', method: 'Карта',          amount: 1890,  dir: 'in' },
-  { id: 3,  dt: '24.06.2026 11:00', type: 'sale_service', desc: 'Мужская стрижка',      client: 'Артём Б.',      staff: 'И. Лебедев',  method: 'Наличные',       amount: 1200,  dir: 'in' },
-  { id: 4,  dt: '24.06.2026 11:15', type: 'expense',      desc: 'Закупка расходников',  client: '—',             staff: 'Администр.',  method: 'Перевод',        amount: 4500,  dir: 'out' },
-  { id: 5,  dt: '24.06.2026 12:00', type: 'sale_service', desc: 'Маникюр + покрытие',   client: 'Дарья Л.',      staff: 'С. Котова',   method: 'Онлайн (Mini App)', amount: 1800, dir: 'in' },
-  { id: 6,  dt: '24.06.2026 13:20', type: 'refund',       desc: 'Возврат за пилинг',    client: 'Алёна М.',      staff: 'Д. Орлов',    method: 'Карта',          amount: 3200,  dir: 'out' },
-  { id: 7,  dt: '24.06.2026 14:00', type: 'sale_service', desc: 'Окрашивание (корни)',   client: 'Ольга К.',      staff: 'А. Морозова', method: 'Смешанная',      amount: 3500,  dir: 'in' },
-  { id: 8,  dt: '24.06.2026 15:30', type: 'income',       desc: 'Продажа сертификата',  client: 'Виктория З.',   staff: 'Администр.',  method: 'Карта',          amount: 5000,  dir: 'in' },
-  { id: 9,  dt: '24.06.2026 16:00', type: 'deposit',      desc: 'Внесение в кассу',     client: '—',             staff: 'Администр.',  method: 'Наличные',       amount: 10000, dir: 'in' },
-  { id: 10, dt: '24.06.2026 17:15', type: 'sale_service', desc: 'Наращивание ногтей',   client: 'Ксения В.',     staff: 'С. Котова',   method: 'Онлайн (Mini App)', amount: 4200, dir: 'in' },
-  { id: 11, dt: '24.06.2026 18:00', type: 'withdraw',     desc: 'Изъятие для инкассо',  client: '—',             staff: 'Администр.',  method: 'Наличные',       amount: 8000,  dir: 'out' },
-  { id: 12, dt: '24.06.2026 19:00', type: 'sale_service', desc: 'Стрижка',              client: 'Елена С.',      staff: 'А. Морозова', method: 'Карта',          amount: 1800,  dir: 'in' },
+// Ссылка на сущность (EntityRef)
+const R = (id) => {
+  const e = entityById(id)
+  return { type: e.type, id: e.id, name: e.name }
+}
+
+const INITIAL_OPS = [
+  { id: 1, dt: '24.06.2026 09:45', source: R('cp_client'), recipient: R('safe_main'), amount: 2400, status: 'published', method: 'Карта', desc: 'Стрижка + укладка', isSystem: true, ref: 'Чек SALE-0042' },
+  { id: 2, dt: '24.06.2026 10:30', source: R('cp_client'), recipient: R('safe_main'), amount: 1890, status: 'published', method: 'Карта', desc: 'Продажа: Шампунь Kerastase', isSystem: true, ref: 'Чек SALE-0043' },
+  { id: 3, dt: '24.06.2026 11:00', source: R('cp_client'), recipient: R('safe_main'), amount: 1200, status: 'published', method: 'Наличные', desc: 'Мужская стрижка', isSystem: true, ref: 'Чек SALE-0044' },
+  { id: 4, dt: '24.06.2026 11:15', source: R('safe_main'), recipient: R('cp_kerastase'), amount: 4500, status: 'published', method: 'Перевод', desc: 'Закупка расходников', comment: 'Краситель, окислитель, фольга' },
+  { id: 5, dt: '24.06.2026 12:00', source: R('cp_client'), recipient: R('safe_reg2'), amount: 1800, status: 'published', method: 'Онлайн (Mini App)', desc: 'Маникюр + покрытие', isSystem: true, ref: 'Чек SALE-0045' },
+  { id: 6, dt: '24.06.2026 13:20', source: R('safe_main'), recipient: R('cp_client'), amount: 3200, status: 'published', method: 'Карта', desc: 'Возврат за пилинг', comment: 'Клиент недоволен результатом' },
+  { id: 7, dt: '24.06.2026 14:00', source: R('cp_client'), recipient: R('safe_main'), amount: 3500, status: 'published', method: 'Смешанная', desc: 'Окрашивание (корни)', isSystem: true, ref: 'Чек SALE-0046' },
+  { id: 8, dt: '24.06.2026 16:00', source: R('safe_main'), recipient: R('safe_box'), amount: 10000, status: 'published', method: 'Наличные', desc: 'Инкассация в сейф' },
+  { id: 9, dt: '24.06.2026 17:00', source: R('cp_payroll'), recipient: R('cp_morozova'), amount: 25000, status: 'published', method: '—', desc: 'Начисление ЗП за июнь' },
+  { id: 10, dt: '24.06.2026 17:30', source: R('safe_main'), recipient: R('cp_morozova'), amount: 25000, status: 'published', method: 'Наличные', desc: 'Выплата ЗП' },
+  { id: 11, dt: '25.06.2026 09:00', source: R('safe_main'), recipient: R('cp_landlord'), amount: 35000, status: 'draft', method: 'Перевод', desc: 'Аренда за июль', comment: 'Оплатить до 1 числа' },
+  { id: 12, dt: '23.06.2026 20:00', source: R('safe_box'), recipient: R('safe_reg2'), amount: 5000, status: 'cancelled', method: 'Наличные', desc: 'Размен для кассы №2' },
 ]
 
-const EMPTY_TX = { dt: '24.06.2026', desc: '', method: 'Наличные', amount: '' }
-
-// ─── Основной компонент ────────────────────────────────────────────────────────
+// ─── Страница ──────────────────────────────────────────────────────────────────
 
 export default function Finance() {
   return (
@@ -47,100 +117,123 @@ export default function Finance() {
       <PageHead
         crumbs="Финансы"
         title="Финансы"
-        sub="Учёт финансовых транзакций: доходы, расходы и оплата визитов."
+        sub="Операции: приходы, расходы, переводы и начисления."
       />
-
-      <TransactionsTab />
+      <OperationsTab />
     </>
   )
 }
 
-// ─── Вкладка «Транзакции» ─────────────────────────────────────────────────────
-
-function TransactionsTab() {
-  const [typeFilter, setTypeFilter] = useState('Все')
+function OperationsTab() {
+  const [rows, setRows] = useState(INITIAL_OPS)
+  const [kindFilter, setKindFilter] = useState('Все')
+  const [statusFilter, setStatusFilter] = useState('Все статусы')
   const [methodFilter, setMethodFilter] = useState('Все способы')
+  const [search, setSearch] = useState('')
   const [from, setFrom] = useState('2026-06-01')
   const [to, setTo] = useState('2026-06-30')
+  const [selected, setSelected] = useState(null)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editRow, setEditRow] = useState(null)
   const [payDrawer, setPayDrawer] = useState(false)
-  // txDrawer: null | 'income' | 'expense'
-  const [txDrawer, setTxDrawer] = useState(null)
-  const [txForm, setTxForm] = useState(EMPTY_TX)
-  const [rows, setRows] = useState(INITIAL_TRANSACTIONS)
-
-  const totalIncome = rows.filter((t) => t.dir === 'in').reduce((s, t) => s + t.amount, 0)
-  const totalExpense = rows.filter((t) => t.dir === 'out').reduce((s, t) => s + t.amount, 0)
 
   const filtered = rows.filter((t) => {
-    const matchType = typeFilter === 'Все' || TX_TYPES[t.type]?.label === typeFilter
-    const matchMethod = methodFilter === 'Все способы' || t.method === methodFilter
-    return matchType && matchMethod
+    const kind = txKind(t.source.type, t.recipient.type)
+    if (kindFilter !== 'Все' && KIND[kind].label !== kindFilter) return false
+    if (statusFilter !== 'Все статусы' && STATUS[t.status].label !== statusFilter) return false
+    if (methodFilter !== 'Все способы' && t.method !== methodFilter) return false
+    const q = search.trim().toLowerCase()
+    if (q && !(
+      t.desc.toLowerCase().includes(q) ||
+      t.source.name.toLowerCase().includes(q) ||
+      t.recipient.name.toLowerCase().includes(q)
+    )) return false
+    return true
   })
 
-  function openTxDrawer(kind) {
-    setTxForm(EMPTY_TX)
-    setTxDrawer(kind)
+  // Сводка считается только по проведённым операциям.
+  let inflow = 0
+  let outflow = 0
+  for (const t of filtered) {
+    if (t.status !== 'published') continue
+    const kind = txKind(t.source.type, t.recipient.type)
+    if (kind === 'in') inflow += t.amount
+    if (kind === 'out') outflow += t.amount
   }
+  const net = inflow - outflow
 
-  function saveTx() {
-    if (!txForm.desc?.trim() || !txForm.amount) return
-    const isIncome = txDrawer === 'income'
-    const now = new Date()
-    const pad = (n) => String(n).padStart(2, '0')
-    const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`
-    const dt = txForm.dt
-      ? `${txForm.dt} ${timeStr}`
-      : `${pad(now.getDate())}.${pad(now.getMonth() + 1)}.${now.getFullYear()} ${timeStr}`
-    const newRow = {
-      id: Date.now(),
-      dt,
-      type: isIncome ? 'income' : 'expense',
-      desc: txForm.desc.trim(),
-      client: '—',
-      staff: 'Администр.',
-      method: txForm.method || 'Наличные',
-      amount: Math.abs(Number(txForm.amount)),
-      dir: isIncome ? 'in' : 'out',
-    }
-    setRows([newRow, ...rows])
-    setTxForm(EMPTY_TX)
-    setTxDrawer(null)
+  function publish(id) {
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, status: 'published' } : r)))
+    setSelected((s) => (s && s.id === id ? { ...s, status: 'published' } : s))
+  }
+  function cancelOp(id) {
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, status: 'cancelled' } : r)))
+    setSelected((s) => (s && s.id === id ? { ...s, status: 'cancelled' } : s))
+  }
+  function deleteDraft(id) {
+    setRows((rs) => rs.filter((r) => r.id !== id))
+    setSelected(null)
+  }
+  function startEdit(row) {
+    setSelected(null)
+    setEditRow(row)
+    setCreateOpen(true)
+  }
+  function startCreate() {
+    setEditRow(null)
+    setCreateOpen(true)
+  }
+  function saveOp(row, isEdit) {
+    if (isEdit) setRows((rs) => rs.map((r) => (r.id === row.id ? row : r)))
+    else setRows((rs) => [row, ...rs])
+    setCreateOpen(false)
+    setEditRow(null)
   }
 
   return (
     <>
       <div className="grid grid-4" style={{ marginBottom: 16 }}>
-        <Stat label="Доходы за период" value={fmt(totalIncome)} delta="+11%" dir="up" />
-        <Stat label="Расходы за период" value={fmt(totalExpense)} delta="-3%" dir="down" />
-        <Stat label="Итого" value={fmt(totalIncome - totalExpense)} delta="+18%" dir="up" />
-        <Stat label="Операций" value={`${rows.length}`} delta="+2" dir="up" />
+        <Stat label="Приход за период" value={fmt(inflow)} delta="+11%" dir="up" />
+        <Stat label="Расход за период" value={fmt(outflow)} delta="-3%" dir="down" />
+        <Stat label="Чистый поток" value={`${net >= 0 ? '+' : '−'}${fmt(Math.abs(net))}`} delta="+18%" dir={net >= 0 ? 'up' : 'down'} />
+        <Stat label="Операций" value={`${filtered.length}`} delta={`из ${rows.length}`} />
       </div>
 
       <div className="toolbar">
         <Chips
-          items={['Все', ...Object.values(TX_TYPES).map((t) => t.label)]}
-          active={typeFilter}
-          onChange={setTypeFilter}
+          items={['Все', 'Приход', 'Расход', 'Перевод', 'Начисление']}
+          active={kindFilter}
+          onChange={setKindFilter}
         />
       </div>
 
       <div className="toolbar">
-        <span className="small muted">с:</span>
-        <DatePicker value={from} onChange={setFrom} style={{ width: 150 }} />
-        <span className="small muted">по:</span>
-        <DatePicker value={to} onChange={setTo} style={{ width: 150 }} />
+        <Input
+          placeholder="Поиск по назначению, кассе, контрагенту"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ width: 280 }}
+        />
+        <Select
+          options={['Все статусы', ...Object.values(STATUS).map((s) => s.label)]}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ width: 160 }}
+        />
         <Select
           options={['Все способы', ...PAY_METHODS]}
           value={methodFilter}
           onChange={(e) => setMethodFilter(e.target.value)}
           style={{ width: 170 }}
         />
-        <Select options={['Все сотрудники', 'А. Морозова', 'И. Лебедев', 'С. Котова', 'Д. Орлов']} style={{ width: 170 }} />
+        <span className="small muted">с:</span>
+        <DatePicker value={from} onChange={setFrom} style={{ width: 140 }} />
+        <span className="small muted">по:</span>
+        <DatePicker value={to} onChange={setTo} style={{ width: 140 }} />
       </div>
 
       <div className="toolbar">
-        <Button onClick={() => openTxDrawer('income')}><IcPlus size={16} /> Доход</Button>
-        <Button variant="secondary" onClick={() => openTxDrawer('expense')}><IcPlus size={16} /> Расход</Button>
+        <Button onClick={startCreate}><IcPlus size={16} /> Новая операция</Button>
         <Button variant="secondary" onClick={() => setPayDrawer(true)}>Оплата визита</Button>
         <div className="spacer" />
         <Button variant="ghost"><IcExport size={16} /> Экспорт в Excel</Button>
@@ -151,83 +244,301 @@ function TransactionsTab() {
         <Table
           columns={[
             { label: 'Дата / время' },
-            { label: 'Тип' },
-            { label: 'Описание / клиент' },
-            { label: 'Сотрудник' },
-            { label: 'Способ оплаты' },
+            { label: 'Вид' },
+            { label: 'Назначение / поток' },
+            { label: 'Способ' },
+            { label: 'Статус' },
             { label: 'Сумма', num: true },
           ]}
           rows={filtered}
-          renderRow={(r, i) => (
-            <tr key={i}>
-              <td><span className="small muted">{r.dt}</span></td>
-              <td><Badge color={TX_TYPES[r.type]?.color}>{TX_TYPES[r.type]?.label}</Badge></td>
-              <td>
-                <div style={{ fontWeight: 500 }}>{r.desc}</div>
-                {r.client !== '—' && <div className="small muted">{r.client}</div>}
-              </td>
-              <td>{r.staff}</td>
-              <td><span className="small">{r.method}</span></td>
-              <td className="num" style={{ fontWeight: 700, color: r.dir === 'in' ? 'var(--green, #16A34A)' : 'var(--red, #DC2626)' }}>
-                {r.dir === 'in' ? '+' : '−'}{fmt(r.amount)}
-              </td>
-            </tr>
-          )}
+          renderRow={(r) => {
+            const kind = txKind(r.source.type, r.recipient.type)
+            const k = KIND[kind]
+            return (
+              <tr
+                key={r.id}
+                style={{ cursor: 'pointer', opacity: r.status === 'cancelled' ? 0.55 : 1 }}
+                onClick={() => setSelected(r)}
+              >
+                <td><span className="small muted">{r.dt}</span></td>
+                <td><KindTag kind={kind} /></td>
+                <td>
+                  <div style={{ fontWeight: 500 }}>{r.desc}</div>
+                  <div className="small muted">{r.source.name} → {r.recipient.name}</div>
+                </td>
+                <td><span className="small">{r.method}</span></td>
+                <td><Badge color={STATUS[r.status].color}>{STATUS[r.status].label}</Badge></td>
+                <td className="num" style={{ fontWeight: 700, color: amountColor(kind) }}>
+                  {k.sign}{fmt(r.amount)}
+                </td>
+              </tr>
+            )
+          }}
         />
       </Card>
 
-      {/* Drawer: Оплата визита */}
-      <PaymentDrawer open={payDrawer} onClose={() => setPayDrawer(false)} />
+      <OpDetailDrawer
+        row={selected}
+        onClose={() => setSelected(null)}
+        onPublish={publish}
+        onCancel={cancelOp}
+        onDelete={deleteDraft}
+        onEdit={startEdit}
+      />
 
-      {/* Drawer: Добавить доход / расход */}
-      <Drawer
-        open={txDrawer !== null}
-        onClose={() => setTxDrawer(null)}
-        title={txDrawer === 'income' ? 'Добавить доход' : 'Добавить расход'}
-        footer={<>
-          <Button onClick={saveTx}>Сохранить</Button>
-          <Button variant="secondary" onClick={() => setTxDrawer(null)}>Отмена</Button>
-        </>}
-      >
-        <Field label="Дата">
-          <Input
-            placeholder="24.06.2026"
-            value={txForm.dt}
-            onChange={(e) => setTxForm({ ...txForm, dt: e.target.value })}
-          />
-        </Field>
-        {txDrawer === 'expense' && (
-          <Field label="Категория расхода">
-            <Select
-              options={['Расходные материалы', 'Аренда', 'Зарплата', 'Реклама', 'Оборудование', 'Прочее']}
-              onChange={(e) => setTxForm({ ...txForm, desc: txForm.desc || e.target.value })}
-            />
-          </Field>
-        )}
-        <Field label="Описание">
-          <Input
-            placeholder={txDrawer === 'income' ? 'Напр., продажа сертификата' : 'Краткое описание расхода'}
-            value={txForm.desc}
-            onChange={(e) => setTxForm({ ...txForm, desc: e.target.value })}
-          />
-        </Field>
-        <Field label="Способ оплаты">
-          <Select
-            options={PAY_METHODS}
-            value={txForm.method}
-            onChange={(e) => setTxForm({ ...txForm, method: e.target.value })}
-          />
-        </Field>
-        <Field label="Сумма">
-          <Input
-            type="number"
-            placeholder="0"
-            value={txForm.amount}
-            onChange={(e) => setTxForm({ ...txForm, amount: e.target.value })}
-          />
-        </Field>
-      </Drawer>
+      <CreateOpDrawer
+        open={createOpen}
+        editRow={editRow}
+        onClose={() => { setCreateOpen(false); setEditRow(null) }}
+        onSave={saveOp}
+      />
+
+      <PaymentDrawer open={payDrawer} onClose={() => setPayDrawer(false)} />
     </>
+  )
+}
+
+// ─── Метка вида операции (иконка + бейдж) ──────────────────────────────────────
+
+function KindTag({ kind }) {
+  const k = KIND[kind]
+  const Ico = kindIcon(kind)
+  return (
+    <Badge color={k.color}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <Ico size={12} /> {k.label}
+      </span>
+    </Badge>
+  )
+}
+
+// ─── Карточка операции ─────────────────────────────────────────────────────────
+
+function OpDetailDrawer({ row, onClose, onPublish, onCancel, onDelete, onEdit }) {
+  const open = !!row
+  const kind = row ? txKind(row.source.type, row.recipient.type) : 'in'
+  const k = KIND[kind]
+
+  return (
+    <Drawer
+      open={open}
+      onClose={onClose}
+      title={row ? k.label : ''}
+      footer={row && (
+        <>
+          {row.status === 'draft' && (
+            <>
+              <Button onClick={() => onPublish(row.id)}>Опубликовать</Button>
+              <Button variant="secondary" onClick={() => onEdit(row)}><IcEdit size={14} /> Редактировать</Button>
+              <Button variant="danger" onClick={() => onDelete(row.id)}><IcTrash size={14} /> Удалить черновик</Button>
+            </>
+          )}
+          {row.status === 'published' && (
+            <Button variant="secondary" onClick={() => onCancel(row.id)}>Отменить операцию</Button>
+          )}
+          {row.status === 'cancelled' && <span className="small muted">Операция отменена</span>}
+        </>
+      )}
+    >
+      {row && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <KindTag kind={kind} />
+            <Badge color={STATUS[row.status].color}>{STATUS[row.status].label}</Badge>
+          </div>
+          <div className="small muted" style={{ letterSpacing: 1, textTransform: 'uppercase', fontSize: 11 }}>Сумма</div>
+          <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.5px', color: amountColor(kind) }}>
+            {k.sign}{fmt(row.amount)}
+          </div>
+          <div style={{ fontWeight: 500, marginTop: 4 }}>{row.desc}</div>
+
+          <div className="divider" />
+          <div className="section-title">{kind === 'accrual' ? 'Бух. проводка' : 'Движение денег'}</div>
+          <FlowRow label="Источник" entity={row.source} />
+          <div style={{ paddingLeft: 17, color: 'var(--muted, #6B7280)' }}>↓</div>
+          <FlowRow label="Получатель" entity={row.recipient} />
+
+          <div className="divider" />
+          <div className="section-title">Детали</div>
+          <KV items={[
+            ['Дата', row.dt],
+            ['Способ оплаты', row.method && row.method !== '—' ? row.method : 'Нет'],
+            ['Комментарий', row.comment?.trim() ? row.comment : 'Нет'],
+            ...(row.ref ? [['Связано с', row.ref]] : []),
+          ]} />
+          {row.isSystem && (
+            <div className="note small" style={{ marginTop: 12 }}>
+              Создано автоматически (продажа с POS).
+            </div>
+          )}
+        </>
+      )}
+    </Drawer>
+  )
+}
+
+function FlowRow({ label, entity }) {
+  const Ico = entityIcon(entity.type)
+  return (
+    <div className="list-line" style={{ gap: 10 }}>
+      <span
+        className="icon-btn"
+        style={{ width: 34, height: 34, cursor: 'default', flex: '0 0 auto' }}
+      >
+        <Ico size={16} />
+      </span>
+      <div>
+        <div className="small muted">{label}</div>
+        <div style={{ fontWeight: 500 }}>{entity.name}</div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Создание / редактирование операции ────────────────────────────────────────
+
+function defaultSides(kind) {
+  const [st, dt] = KIND_SIDES[kind]
+  const src = entitiesForType(st)
+  const dst = entitiesForType(dt)
+  let recipientId = dst[0].id
+  if (st === dt && dst.length > 1 && dst[0].id === src[0].id) recipientId = dst[1].id
+  return { sourceId: src[0].id, recipientId }
+}
+
+function CreateOpDrawer({ open, editRow, onClose, onSave }) {
+  const [form, setForm] = useState(() => ({ kind: 'out', ...defaultSides('out'), amount: '', desc: '', method: 'Наличные', date: '', comment: '' }))
+
+  useEffect(() => {
+    if (!open) return
+    if (editRow) {
+      const kind = txKind(editRow.source.type, editRow.recipient.type)
+      setForm({
+        kind,
+        sourceId: editRow.source.id,
+        recipientId: editRow.recipient.id,
+        amount: String(editRow.amount),
+        desc: editRow.desc,
+        method: editRow.method && editRow.method !== '—' ? editRow.method : 'Наличные',
+        date: '',
+        comment: editRow.comment || '',
+      })
+    } else {
+      setForm({ kind: 'out', ...defaultSides('out'), amount: '', desc: '', method: 'Наличные', date: '', comment: '' })
+    }
+  }, [open, editRow])
+
+  function changeKind(kind) {
+    setForm((f) => ({ ...f, kind, ...defaultSides(kind) }))
+  }
+
+  const [srcType, dstType] = KIND_SIDES[form.kind]
+  const sameType = srcType === dstType
+  const collision = sameType && form.sourceId === form.recipientId
+  const canSave = Number(form.amount) > 0 && form.sourceId && form.recipientId && !collision
+
+  function submit(status) {
+    if (!canSave) return
+    const src = entityById(form.sourceId)
+    const dst = entityById(form.recipientId)
+    const row = {
+      id: editRow ? editRow.id : Date.now(),
+      dt: buildDt(form.date, editRow ? editRow.dt : todayDt()),
+      source: { type: src.type, id: src.id, name: src.name },
+      recipient: { type: dst.type, id: dst.id, name: dst.name },
+      amount: Math.abs(Number(form.amount)),
+      status,
+      method: form.method,
+      desc: form.desc.trim() || KIND[form.kind].label,
+      comment: form.comment.trim(),
+      isSystem: editRow ? editRow.isSystem : false,
+      ref: editRow ? editRow.ref : undefined,
+    }
+    onSave(row, !!editRow)
+  }
+
+  const srcOptions = entitiesForType(srcType).map((e) => ({ value: e.id, label: e.name }))
+  const dstOptions = entitiesForType(dstType).map((e) => ({ value: e.id, label: e.name }))
+
+  return (
+    <Drawer
+      open={open}
+      onClose={onClose}
+      title={editRow ? 'Редактирование операции' : 'Новая операция'}
+      footer={
+        <>
+          <Button disabled={!canSave} onClick={() => submit('published')}>Провести</Button>
+          <Button variant="secondary" disabled={!canSave} onClick={() => submit('draft')}>Сохранить черновик</Button>
+          <Button variant="ghost" onClick={onClose}>Отмена</Button>
+        </>
+      }
+    >
+      <Field label="Вид операции">
+        <Chips
+          items={['Приход', 'Расход', 'Перевод', 'Начисление']}
+          active={KIND[form.kind].label}
+          onChange={(label) => changeKind(KIND_BY_LABEL[label])}
+        />
+      </Field>
+
+      <Field label="Сумма">
+        <Input
+          type="number"
+          placeholder="0"
+          value={form.amount}
+          onChange={(e) => setForm({ ...form, amount: e.target.value })}
+        />
+      </Field>
+
+      <Field label={`Источник (${ENTITY_LABEL[srcType]})`}>
+        <Select
+          options={srcOptions}
+          value={form.sourceId}
+          onChange={(e) => setForm({ ...form, sourceId: e.target.value })}
+        />
+      </Field>
+
+      <Field label={`Получатель (${ENTITY_LABEL[dstType]})`}>
+        <Select
+          options={dstOptions}
+          value={form.recipientId}
+          onChange={(e) => setForm({ ...form, recipientId: e.target.value })}
+        />
+      </Field>
+      {collision && (
+        <div className="note small" style={{ color: 'var(--red, #DC2626)' }}>
+          Источник и получатель не могут совпадать.
+        </div>
+      )}
+
+      <Field label="Назначение">
+        <Input
+          placeholder="Напр., закупка расходников"
+          value={form.desc}
+          onChange={(e) => setForm({ ...form, desc: e.target.value })}
+        />
+      </Field>
+
+      <Field label="Способ оплаты">
+        <Select
+          options={PAY_METHODS}
+          value={form.method}
+          onChange={(e) => setForm({ ...form, method: e.target.value })}
+        />
+      </Field>
+
+      <Field label="Дата">
+        <DatePicker value={form.date} onChange={(v) => setForm({ ...form, date: v })} />
+      </Field>
+
+      <Field label="Комментарий">
+        <Textarea
+          placeholder="Примечание…"
+          value={form.comment}
+          onChange={(e) => setForm({ ...form, comment: e.target.value })}
+        />
+      </Field>
+    </Drawer>
   )
 }
 
@@ -318,4 +629,3 @@ function PaymentDrawer({ open, onClose }) {
     </Drawer>
   )
 }
-

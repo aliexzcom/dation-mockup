@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { IcBranch, IcUsers, IcChart, IcBox, IcMenu, IcLogout, IcChevron } from './icons.jsx'
-import { REPORTS } from '../data/inventoryReports.js'
+import { IcBranch, IcUsers, IcScissors, IcChart, IcMenu, IcLogout, IcChevron, IcCalendar } from './icons.jsx'
 import { REPORT_GROUPS } from '../data/analyticsReports.js'
 import { ThemeToggle } from './ThemeToggle.jsx'
 
@@ -9,6 +8,21 @@ import { ThemeToggle } from './ThemeToggle.jsx'
 const NAV = [
   { to: '/business/branches', label: 'Филиалы', Ico: IcBranch },
   { to: '/business/clients', label: 'Клиенты', Ico: IcUsers },
+]
+
+// Подпункты «Telegram Mini App»: те же вкладки, что и внутри страницы
+const MINIAPP_SUB = [
+  { to: '/business/miniapp', label: 'Настройки', end: true },
+  { to: '/business/miniapp/preview', label: 'Предпросмотр записи' },
+  { to: '/business/miniapp/bot', label: 'Подключение бота' },
+]
+
+// Подпункты «Услуги»: каталог сети — те же разделы, что и на уровне филиала
+const SERVICES_SUB = [
+  { to: '/business/services', label: 'Список услуг', end: true },
+  { to: '/business/services/categories', label: 'Категории' },
+  { to: '/business/services/pricing', label: 'Прайс-лист' },
+  { to: '/business/services/packages', label: 'Пакеты услуг' },
 ]
 
 // Подпункты «Аналитика и отчёты»: Дашборд + группы отчётов
@@ -22,12 +36,16 @@ export default function BusinessLayout() {
   const navigate = useNavigate()
   const location = useLocation()
 
+  const miniappActive = location.pathname.startsWith('/business/miniapp')
+  const servicesActive = location.pathname.startsWith('/business/services')
   const analyticsActive = location.pathname.startsWith('/business/analytics')
-  const reportsActive = location.pathname.startsWith('/business/inventory-reports')
   // Аккордеон: одновременно раскрыт только один раздел
-  const [openMenu, setOpenMenu] = useState(analyticsActive ? 'analytics' : reportsActive ? 'reports' : null)
+  const [openMenu, setOpenMenu] = useState(
+    miniappActive ? 'miniapp' : servicesActive ? 'services' : analyticsActive ? 'analytics' : null,
+  )
+  const miniappOpen = openMenu === 'miniapp'
+  const servicesOpen = openMenu === 'services'
   const analyticsOpen = openMenu === 'analytics'
-  const reportsOpen = openMenu === 'reports'
   const toggle = (key) => setOpenMenu((o) => (o === key ? null : key))
 
   return (
@@ -47,6 +65,34 @@ export default function BusinessLayout() {
             </NavLink>
           ))}
 
+          {/* Раскрывающийся пункт «Telegram Mini App» */}
+          <button className={`nav-item ${miniappActive ? 'active' : ''}`} style={{ width: '100%', border: 0, background: miniappActive ? undefined : 'transparent' }} onClick={() => toggle('miniapp')}>
+            <span className="nav-ico"><IcCalendar size={18} /></span>
+            <span className="nav-label">Telegram Mini App</span>
+            <span className={`nav-chev ${miniappOpen ? 'open' : ''}`}><IcChevron size={16} /></span>
+          </button>
+          {miniappOpen && !collapsed && (
+            <div className="nav-sub">
+              {MINIAPP_SUB.map((s) => (
+                <NavLink key={s.to} to={s.to} end={s.end} className={({ isActive }) => `nav-subitem ${isActive ? 'active' : ''}`}>{s.label}</NavLink>
+              ))}
+            </div>
+          )}
+
+          {/* Раскрывающийся пункт «Услуги» — каталог сети */}
+          <button className={`nav-item ${servicesActive ? 'active' : ''}`} style={{ width: '100%', border: 0, background: servicesActive ? undefined : 'transparent' }} onClick={() => toggle('services')}>
+            <span className="nav-ico"><IcScissors size={18} /></span>
+            <span className="nav-label">Услуги</span>
+            <span className={`nav-chev ${servicesOpen ? 'open' : ''}`}><IcChevron size={16} /></span>
+          </button>
+          {servicesOpen && !collapsed && (
+            <div className="nav-sub">
+              {SERVICES_SUB.map((s) => (
+                <NavLink key={s.to} to={s.to} end={s.end} className={({ isActive }) => `nav-subitem ${isActive ? 'active' : ''}`}>{s.label}</NavLink>
+              ))}
+            </div>
+          )}
+
           {/* Раскрывающийся пункт «Аналитика и отчёты» */}
           <button className={`nav-item ${analyticsActive ? 'active' : ''}`} style={{ width: '100%', border: 0, background: analyticsActive ? undefined : 'transparent' }} onClick={() => toggle('analytics')}>
             <span className="nav-ico"><IcChart size={18} /></span>
@@ -57,20 +103,6 @@ export default function BusinessLayout() {
             <div className="nav-sub">
               {ANALYTICS_SUB.map((s) => (
                 <NavLink key={s.to} to={s.to} end={s.end} className={({ isActive }) => `nav-subitem ${isActive ? 'active' : ''}`}>{s.label}</NavLink>
-              ))}
-            </div>
-          )}
-
-          {/* Раскрывающийся пункт «Отчёты по товарам» */}
-          <button className={`nav-item ${reportsActive ? 'active' : ''}`} style={{ width: '100%', border: 0, background: reportsActive ? undefined : 'transparent' }} onClick={() => toggle('reports')}>
-            <span className="nav-ico"><IcBox size={18} /></span>
-            <span className="nav-label">Отчёты по товарам</span>
-            <span className={`nav-chev ${reportsOpen ? 'open' : ''}`}><IcChevron size={16} /></span>
-          </button>
-          {reportsOpen && !collapsed && (
-            <div className="nav-sub">
-              {REPORTS.map((r) => (
-                <NavLink key={r.id} to={`/business/inventory-reports/${r.id}`} className={({ isActive }) => `nav-subitem ${isActive ? 'active' : ''}`}>{r.title}</NavLink>
               ))}
             </div>
           )}
