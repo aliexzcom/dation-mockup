@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Frame, Steps, Tick, Stars, Ava, ThemeBtn } from '../components/ui.jsx'
 import { DateTimePicker } from '../components/DateTime.jsx'
 import {
-  IcPin, IcCheck, IcUser, IcCard, IcCash, IcWallet, IcInfo,
+  IcPin, IcCheck, IcUser, IcScissors, IcChevR, IcCard, IcCash, IcWallet, IcInfo,
 } from '../icons.jsx'
 import {
   COMPANY, CLIENT, BRANCHES, CATEGORIES, STAFF, PREPAY_AMOUNT,
@@ -11,11 +11,15 @@ import {
 } from '../data.js'
 import { formatUzbPhone, isUzbPhoneValid } from '../phone.js'
 
-const STEP_TITLES = ['Филиал', 'Услуги', 'Мастер', 'Дата и время', 'Контакты', 'Депозит']
+const TITLES = {
+  branch: 'Филиал', mode: 'Способ записи', services: 'Услуги', master: 'Мастер',
+  datetime: 'Дата и время', contacts: 'Контакты', deposit: 'Депозит',
+}
 
 export default function BookingFlow({ theme }) {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
+  const [entryMode, setEntryMode] = useState(null) // 'service' | 'master'
   const [branch, setBranch] = useState(null)
   const [services, setServices] = useState([])   // массив объектов услуг
   const [master, setMaster] = useState(null)
@@ -25,30 +29,54 @@ export default function BookingFlow({ theme }) {
   const [phone, setPhone] = useState(CLIENT.phone)
   const [comment, setComment] = useState('')
   const [payMethod, setPayMethod] = useState('payme')
+  const [submitted, setSubmitted] = useState(false)
 
   const total = useMemo(() => services.reduce((s, x) => s + x.price, 0), [services])
   const totalDur = useMemo(() => services.reduce((s, x) => s + x.dur, 0), [services])
   const selectedIds = services.map((s) => s.id)
 
-  function toggleService(svc) {
-    setServices((prev) =>
-      prev.some((s) => s.id === svc.id) ? prev.filter((s) => s.id !== svc.id) : [...prev, svc]
-    )
-    // при смене услуг сбрасываем мастера, если он больше не оказывает выбранное
-    setMaster(null)
-  }
+  // Порядок шагов зависит от способа записи (по услуге / по мастеру)
+  const flow = [
+    'branch', 'mode',
+    ...(entryMode === 'master' ? ['master', 'services'] : ['services', 'master']),
+    'datetime', 'contacts', 'deposit',
+  ]
+  const screen = flow[step]
 
-  const back = () => setStep((s) => Math.max(0, s - 1))
-  const next = () => setStep((s) => s + 1)
+  // Услуги: если выбран конкретный мастер (запись «по мастеру») — только его услуги
+  const visibleCategories = useMemo(() => {
+    if (!master || master.any) return CATEGORIES
+    return CATEGORIES
+      .map((c) => ({ ...c, services: c.services.filter((s) => master.services?.includes(s.id)) }))
+      .filter((c) => c.services.length)
+  }, [master])
 
-  // Мастера, подходящие под выбранные услуги
+  // Мастера: если выбраны услуги (запись «по услуге») — только подходящие
   const masters = useMemo(() => {
     if (!selectedIds.length) return STAFF
     return STAFF.filter((m) => m.any || m.services?.some((sid) => selectedIds.includes(sid)))
   }, [selectedIds])
 
+  function toggleService(svc) {
+    setServices((prev) =>
+      prev.some((s) => s.id === svc.id) ? prev.filter((s) => s.id !== svc.id) : [...prev, svc]
+    )
+    // Мастера сбрасываем только в режиме «по услуге» (там он зависит от услуг)
+    if (entryMode !== 'master') setMaster(null)
+  }
+
+  function chooseMode(m) {
+    setEntryMode(m)
+    setServices([])
+    setMaster(null)
+    setStep((s) => s + 1)
+  }
+
+  const back = () => (step > 0 ? setStep((s) => s - 1) : navigate('/'))
+  const next = () => setStep((s) => s + 1)
+
   // ----- Экран успеха -----
-  if (step === 6) {
+  if (submitted) {
     return (
       <Frame title="Готово" subtitle={COMPANY.name} right={<ThemeBtn theme={theme} />}>
         <div className="pad center">
@@ -67,7 +95,7 @@ export default function BookingFlow({ theme }) {
           <div style={{ marginTop: 18 }}>
             <button className="btn" onClick={() => navigate('/my')}>Мои записи</button>
             <div className="bcard-actions" style={{ marginTop: 10 }}>
-              <button className="btn secondary" onClick={() => setStep(3)}>Перенести</button>
+              <button className="btn secondary" onClick={() => { setSubmitted(false); setStep(flow.indexOf('datetime')) }}>Перенести</button>
               <button className="btn danger" onClick={() => navigate('/')}>Отменить</button>
             </div>
           </div>
@@ -80,19 +108,19 @@ export default function BookingFlow({ theme }) {
   return (
     <Frame
       title="Онлайн-запись"
-      subtitle={`${STEP_TITLES[step]} · шаг ${step + 1} из 6`}
-      onBack={step > 0 ? back : () => navigate('/')}
+      subtitle={`${TITLES[screen]} · шаг ${step + 1} из ${flow.length}`}
+      onBack={back}
       right={<ThemeBtn theme={theme} />}
-      scrollKey={step}
+      scrollKey={screen}
       footer={renderFooter()}
     >
-      <Steps total={6} current={step} />
+      <Steps total={flow.length} current={step} />
       <div className="pad">{renderStep()}</div>
     </Frame>
   )
 
   function renderStep() {
-    if (step === 0) return (
+    if (screen === 'branch') return (
       <>
         <h2 className="h-screen">Выберите филиал</h2>
         <p className="h-sub">{COMPANY.name}</p>
@@ -109,11 +137,34 @@ export default function BookingFlow({ theme }) {
       </>
     )
 
-    if (step === 1) return (
+    if (screen === 'mode') return (
+      <>
+        <h2 className="h-screen">С чего начнём?</h2>
+        <p className="h-sub">Выберите, как удобнее записаться</p>
+        <button className="pick" onClick={() => chooseMode('service')}>
+          <Ava><IcScissors /></Ava>
+          <div className="pick-body">
+            <div className="pick-title">По услуге</div>
+            <div className="pick-meta">Сначала услуги, потом мастер</div>
+          </div>
+          <IcChevR size={18} style={{ color: 'var(--text-faint)' }} />
+        </button>
+        <button className="pick" onClick={() => chooseMode('master')}>
+          <Ava className="round"><IcUser /></Ava>
+          <div className="pick-body">
+            <div className="pick-title">По мастеру</div>
+            <div className="pick-meta">Сначала мастер, потом его услуги</div>
+          </div>
+          <IcChevR size={18} style={{ color: 'var(--text-faint)' }} />
+        </button>
+      </>
+    )
+
+    if (screen === 'services') return (
       <>
         <h2 className="h-screen">Какие услуги?</h2>
-        <p className="h-sub">Можно выбрать несколько</p>
-        {CATEGORIES.map((cat) => (
+        <p className="h-sub">{master && !master.any ? `Услуги мастера ${master.name}` : 'Можно выбрать несколько'}</p>
+        {visibleCategories.map((cat) => (
           <div key={cat.id}>
             <div className="sec-title">{cat.name}</div>
             {cat.services.map((svc) => {
@@ -137,10 +188,10 @@ export default function BookingFlow({ theme }) {
       </>
     )
 
-    if (step === 2) return (
+    if (screen === 'master') return (
       <>
         <h2 className="h-screen">Выберите мастера</h2>
-        <p className="h-sub">Показаны мастера по выбранным услугам</p>
+        <p className="h-sub">{entryMode === 'service' ? 'Показаны мастера по выбранным услугам' : 'Все мастера филиала'}</p>
         {masters.map((m) => (
           <button key={m.id} className={'pick' + (master?.id === m.id ? ' sel' : '')} onClick={() => setMaster(m)}>
             <Ava className="round">{m.any ? <IcUser /> : m.initials}</Ava>
@@ -157,7 +208,7 @@ export default function BookingFlow({ theme }) {
       </>
     )
 
-    if (step === 3) return (
+    if (screen === 'datetime') return (
       <>
         <h2 className="h-screen">Дата и время</h2>
         <p className="h-sub">Свободные слоты {master?.any ? '' : `мастера ${master?.name}`}</p>
@@ -166,7 +217,7 @@ export default function BookingFlow({ theme }) {
       </>
     )
 
-    if (step === 4) return (
+    if (screen === 'contacts') return (
       <>
         <h2 className="h-screen">Ваши контакты</h2>
         <p className="h-sub">Подтянуты из Telegram — можно изменить</p>
@@ -191,7 +242,7 @@ export default function BookingFlow({ theme }) {
       </>
     )
 
-    // step 5 — депозит
+    // deposit
     return (
       <>
         <h2 className="h-screen">Предоплата депозита</h2>
@@ -229,7 +280,7 @@ export default function BookingFlow({ theme }) {
           <Tick on={payMethod === 'card'} />
         </button>
 
-        <button className="btn ghost" style={{ marginTop: 8 }} onClick={next}>
+        <button className="btn ghost" style={{ marginTop: 8 }} onClick={() => setSubmitted(true)}>
           <IcCash size={18} /> Оплатить на месте
         </button>
       </>
@@ -237,21 +288,22 @@ export default function BookingFlow({ theme }) {
   }
 
   function renderFooter() {
-    if (step === 0) return <button className="btn" disabled={!branch} onClick={next}>Продолжить</button>
-    if (step === 1) return (
+    if (screen === 'branch') return <button className="btn" disabled={!branch} onClick={next}>Продолжить</button>
+    if (screen === 'mode') return null // выбор карточки сам ведёт дальше
+    if (screen === 'services') return (
       <button className="btn" disabled={!services.length} onClick={next}>
         {services.length ? `Продолжить · ${fmtPrice(total)}` : 'Выберите услугу'}
       </button>
     )
-    if (step === 2) return <button className="btn" disabled={!master} onClick={next}>Продолжить</button>
-    if (step === 3) return (
+    if (screen === 'master') return <button className="btn" disabled={!master} onClick={next}>Продолжить</button>
+    if (screen === 'datetime') return (
       <button className="btn" disabled={!date || !time} onClick={next}>
         {date && time ? `Продолжить · ${time}` : 'Выберите время'}
       </button>
     )
-    if (step === 4) return (
+    if (screen === 'contacts') return (
       <button className="btn" disabled={!name.trim() || !isUzbPhoneValid(phone)} onClick={next}>К депозиту</button>
     )
-    return <button className="btn" onClick={next}>Оплатить {fmtPrice(PREPAY_AMOUNT)} и записаться</button>
+    return <button className="btn" onClick={() => setSubmitted(true)}>Оплатить {fmtPrice(PREPAY_AMOUNT)} и записаться</button>
   }
 }

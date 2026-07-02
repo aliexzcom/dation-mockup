@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { IcBranch, IcUsers, IcScissors, IcChart, IcMenu, IcLogout, IcChevron, IcCalendar } from './icons.jsx'
+import { IcBranch, IcUsers, IcScissors, IcChart, IcMenu, IcLogout, IcChevron, IcCalendar, IcCard } from './icons.jsx'
 import { REPORT_GROUPS } from '../data/analyticsReports.js'
 import { ThemeToggle } from './ThemeToggle.jsx'
 
@@ -106,6 +106,12 @@ export default function BusinessLayout() {
               ))}
             </div>
           )}
+
+          {/* Тарифы и оплаты — SaaS-подписка бизнеса (оплачивает владелец) */}
+          <NavLink to="/business/billing" onClick={() => setOpenMenu(null)} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <span className="nav-ico"><IcCard size={18} /></span>
+            <span className="nav-label">Тарифы и оплаты</span>
+          </NavLink>
         </nav>
         <div className="sidebar-foot">
           <ThemeToggle />

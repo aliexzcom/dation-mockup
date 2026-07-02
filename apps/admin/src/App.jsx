@@ -39,6 +39,7 @@ export default function App() {
         <Route path="services/packages" element={<Services business view="packages" />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="analytics/:group" element={<Analytics />} />
+        <Route path="billing" element={<Billing />} />
       </Route>
 
       <Route path="/" element={<Layout />}>
