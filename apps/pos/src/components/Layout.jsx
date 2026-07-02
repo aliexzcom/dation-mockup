@@ -1,9 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { ThemeToggle } from './ui.jsx'
 import { IcCalendar, IcGear, IcLogout } from '../icons.jsx'
 
-// Каркас POS после входа: боковое меню + верхняя панель + контент.
-export default function Layout({ active, title, employee, theme, onLogout, actions, children }) {
+// Каркас POS после входа: боковое меню + контент (без верхней панели).
+export default function Layout({ active, employee, onLogout, children }) {
   const navigate = useNavigate()
 
   const nav = [
@@ -42,12 +41,6 @@ export default function Layout({ active, title, employee, theme, onLogout, actio
       </aside>
 
       <main className="pos-main">
-        <header className="pos-top">
-          <h1>{title}</h1>
-          <div className="spacer" />
-          {actions}
-          <ThemeToggle theme={theme} />
-        </header>
         <div className="pos-body">{children}</div>
       </main>
     </div>

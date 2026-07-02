@@ -256,6 +256,15 @@ textarea.input { resize: vertical; min-height: 80px; }
 .kb-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 9px; }
 .kb-total { font-weight: 800; }
 .kb-empty { text-align: center; color: var(--text-faint); font-size: 13px; padding: 16px 6px; border: 1.5px dashed var(--border); border-radius: 11px; }
+.kb-expire { display: flex; align-items: center; gap: 5px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 12px; color: var(--text-faint); }
+
+/* ---------- Архив (отменённые записи) ---------- */
+.arch-row { display: flex; align-items: center; gap: 14px; padding: 13px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; cursor: pointer; transition: border-color .15s; }
+.arch-row:hover { border-color: var(--violet-200); }
+.arch-time { width: 100px; flex-shrink: 0; font-weight: 700; font-size: 13.5px; color: var(--text-muted); }
+.arch-client { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arch-sub { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arch-total { flex-shrink: 0; font-weight: 700; font-size: 14px; white-space: nowrap; }
 
 /* ---------- Бейджи статусов ---------- */
 .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 20px; font-size: 12.5px; font-weight: 700; }
@@ -367,3 +376,15 @@ textarea.input { resize: vertical; min-height: 80px; }
 .note { background: var(--violet-50); border: 1px solid var(--violet-200); border-radius: 12px; padding: 13px 15px; color: var(--violet-active); font-size: 13.5px; }
 .search-sm { display: flex; align-items: center; gap: 9px; height: 46px; padding: 0 14px; border: 1.5px solid var(--border-strong); border-radius: 12px; min-width: 240px; }
 .search-sm input { border: 0; outline: 0; flex: 1; font-size: 15px; background: transparent; color: var(--text); }
+
+/* Круглая кнопка создания (FAB) — левый нижний угол области журнала */
+.fab {
+  position: fixed; right: 24px; bottom: 22px; z-index: 40;
+  width: 58px; height: 58px; border-radius: 50%; border: 0;
+  background: var(--violet); color: #fff; cursor: pointer;
+  display: grid; place-items: center;
+  box-shadow: 0 8px 22px rgba(59,101,243,.42);
+  transition: transform .12s, background .12s;
+}
+.fab:hover { background: var(--violet-hover); transform: translateY(-2px); }
+.fab:active { transform: scale(.96); }

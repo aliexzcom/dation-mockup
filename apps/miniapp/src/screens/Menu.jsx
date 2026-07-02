@@ -1,44 +1,41 @@
 import { useNavigate } from 'react-router-dom'
-import { Frame, Ava } from '../components/ui.jsx'
-import { IcCalCheck, IcGear, IcShare, IcChevR } from '../icons.jsx'
-import { CLIENT, COMPANY, MY_BOOKINGS } from '../data.js'
+import { Frame } from '../components/ui.jsx'
+import { IcHome, IcCalCheck, IcUser, IcStar, IcGear, IcChevR, IcSun, IcMoon } from '../icons.jsx'
+import { COMPANY, MY_BOOKINGS } from '../data.js'
 
-// Меню (открывается бургером сверху-слева): профиль + разделы
-export default function Menu() {
+// Бургер-меню: навигация по разделам + переключатель темы (без нижних вкладок)
+export default function Menu({ theme }) {
   const navigate = useNavigate()
 
-  const share = () => {
-    const data = { title: COMPANY.name, text: `Записывайтесь онлайн в ${COMPANY.name}`, url: window.location.origin }
-    if (navigator.share) navigator.share(data).catch(() => {})
-  }
+  const items = [
+    { icon: IcHome, label: 'Главная', to: '/' },
+    { icon: IcCalCheck, label: 'История записей', to: '/my', count: MY_BOOKINGS.length },
+    { icon: IcUser, label: 'Профиль', to: '/profile' },
+    { icon: IcStar, label: 'Отзывы и работы', to: '/reviews' },
+    { icon: IcGear, label: 'Настройки', to: '/settings' },
+  ]
 
   return (
-    <Frame title="Профиль" onBack={() => navigate('/')}>
+    <Frame title="Меню" onBack={() => navigate('/')}>
       <div className="pad">
-        <div className="profile-card">
-          <Ava>{CLIENT.initials}</Ava>
-          <div style={{ minWidth: 0 }}>
-            <div className="pn">{CLIENT.name}</div>
-            <div className="pp">{CLIENT.phone}</div>
-          </div>
+        <div className="menu-card">
+          {items.map((it) => (
+            <button key={it.to} className="mrow" onClick={() => navigate(it.to)}>
+              <span className="mi"><it.icon size={20} /></span>
+              <span className="ml">{it.label}</span>
+              {it.count != null && <span className="mcount">{it.count}</span>}
+              <span className="mchev"><IcChevR size={18} /></span>
+            </button>
+          ))}
         </div>
 
-        <div className="menu-card">
-          <button className="mrow" onClick={() => navigate('/my')}>
-            <span className="mi"><IcCalCheck size={20} /></span>
-            <span className="ml">История посещений</span>
-            <span className="mcount">{MY_BOOKINGS.length}</span>
-            <span className="mchev"><IcChevR size={18} /></span>
+        <div className="sec-title">Тема оформления</div>
+        <div className="seg2">
+          <button className={'seg2-btn' + (!theme.dark ? ' active' : '')} onClick={() => { if (theme.dark) theme.toggle() }}>
+            <IcSun size={18} /> Светлая
           </button>
-          <button className="mrow" onClick={() => navigate('/settings')}>
-            <span className="mi"><IcGear size={20} /></span>
-            <span className="ml">Настройки</span>
-            <span className="mchev"><IcChevR size={18} /></span>
-          </button>
-          <button className="mrow" onClick={share}>
-            <span className="mi"><IcShare size={20} /></span>
-            <span className="ml">Поделиться с друзьями</span>
-            <span className="mchev"><IcChevR size={18} /></span>
+          <button className={'seg2-btn' + (theme.dark ? ' active' : '')} onClick={() => { if (!theme.dark) theme.toggle() }}>
+            <IcMoon size={18} /> Тёмная
           </button>
         </div>
 

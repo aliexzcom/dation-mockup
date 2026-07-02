@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Frame, ThemeBtn } from '../components/ui.jsx'
+import { Frame } from '../components/ui.jsx'
 import { DateTimePicker } from '../components/DateTime.jsx'
 import { IcCheck, IcUser, IcPin } from '../icons.jsx'
 import { MY_BOOKINGS, fmtDur, fmtDateFull } from '../data.js'
 
-export default function Reschedule({ theme }) {
+export default function Reschedule() {
   const { id } = useParams()
   const navigate = useNavigate()
   const booking = MY_BOOKINGS.find((b) => b.id === id) || MY_BOOKINGS[0]
@@ -17,7 +17,7 @@ export default function Reschedule({ theme }) {
   // ----- Экран успеха переноса -----
   if (done) {
     return (
-      <Frame title="Готово" subtitle={booking.branch} right={<ThemeBtn theme={theme} />}>
+      <Frame title="Готово" subtitle={booking.branch}>
         <div className="pad center">
           <div className="success-ico"><IcCheck size={42} /></div>
           <h2 className="h-screen">Запись перенесена</h2>
@@ -49,7 +49,6 @@ export default function Reschedule({ theme }) {
       title="Перенос записи"
       subtitle={booking.branch}
       onBack={() => navigate('/my')}
-      right={<ThemeBtn theme={theme} />}
       footer={
         <button className="btn" disabled={!date || !time} onClick={() => setDone(true)}>
           {date && time ? `Перенести на ${time}` : 'Выберите новое время'}

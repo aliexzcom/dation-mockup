@@ -25,6 +25,10 @@ const START_HOUR = 9
 const HOUR_H = 84   // высота часа, px
 const HEADER_H = 56 // высота шапки колонки сотрудника
 const GRID_H = HOURS.length * HOUR_H
+const SLOTS_PER_HOUR = 4                 // шаг 15 минут
+const SLOT_H = HOUR_H / SLOTS_PER_HOUR
+// Слоты по 15 минут: 9.0, 9.25, 9.5, 9.75, 10.0, …
+const SLOTS = HOURS.flatMap((h) => Array.from({ length: SLOTS_PER_HOUR }, (_, q) => h + q / SLOTS_PER_HOUR))
 const fmtTimeShort = (t) => { const h = Math.floor(t); const m = Math.round((t - h) * 60); return m ? `${h}:${String(m).padStart(2, '0')}` : `${h}:00` }
 
 // Записи: staffId, час начала, длительность (в часах), клиент, услуга, статус
@@ -109,8 +113,8 @@ function DayGrid({ appts, onOpen, onNew }) {
         {/* Шкала времени */}
         <div style={{ width: 56, flexShrink: 0, borderRight: '1px solid var(--border)' }}>
           <div style={{ height: HEADER_H, borderBottom: '1px solid var(--border)' }} />
-          {HOURS.map((h) => (
-            <div key={h} style={{ height: HOUR_H, padding: '5px 8px 0', fontSize: 11.5, color: 'var(--text-faint)', textAlign: 'right' }}>{h}:00</div>
+          {SLOTS.map((t) => (
+            <div key={t} style={{ height: SLOT_H, padding: '1px 8px 0', fontSize: 10.5, color: 'var(--text-faint)', textAlign: 'right', lineHeight: 1, fontWeight: t % 1 === 0 ? 600 : 400 }}>{fmtTimeShort(t)}</div>
           ))}
         </div>
 
@@ -127,16 +131,16 @@ function DayGrid({ appts, onOpen, onNew }) {
             </div>
             {/* тело колонки: линии часов + записи поверх */}
             <div style={{ position: 'relative', height: GRID_H }}>
-              {HOURS.map((h, i) => (
+              {SLOTS.map((t, i) => (
                 <div
-                  key={h}
-                  onClick={(e) => {
-                    // 15-минутный шаг по вертикальной позиции клика внутри часа
-                    const q = Math.min(3, Math.max(0, Math.floor(e.nativeEvent.offsetY / (HOUR_H / 4))))
-                    onNew(s.id, h + q * 0.25)
-                  }}
+                  key={t}
+                  onClick={() => onNew(s.id, t)}
                   title="Создать запись"
-                  style={{ position: 'absolute', left: 0, right: 0, top: i * HOUR_H, height: HOUR_H, borderBottom: '1px solid var(--border)', background: i % 2 ? 'var(--bg-soft)' : 'var(--panel)', cursor: 'pointer' }}
+                  style={{
+                    position: 'absolute', left: 0, right: 0, top: i * SLOT_H, height: SLOT_H, cursor: 'pointer',
+                    borderBottom: t % 1 === 0.75 ? '1px solid var(--border)' : '1px dashed var(--border)',
+                    background: Math.floor(t) % 2 ? 'var(--bg-soft)' : 'var(--panel)',
+                  }}
                 />
               ))}
               {appts.filter((a) => a.staff === s.id).map((a, i) => (

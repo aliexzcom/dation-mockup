@@ -1,30 +1,21 @@
-import { IcBack, IcStar, IcCheck, IcMoon, IcSun, IcMenu } from '../icons.jsx'
-
-// Переключатель темы (иконка в шапке)
-export function ThemeBtn({ theme }) {
-  return (
-    <button className="tbar-ico" onClick={theme.toggle} aria-label="Сменить тему">
-      {theme.dark ? <IcSun /> : <IcMoon />}
-    </button>
-  )
-}
+import { IcBack, IcStar, IcCheck, IcMenu, IcClose } from '../icons.jsx'
 
 // Рамка «телефона»: шапка (Telegram header) + прокручиваемое тело + опц. нижняя кнопка.
-// Слева: кнопка «назад» (onBack), либо бургер-меню (onMenu), либо логотип.
+// Слева: кнопка «назад» (onBack) либо логотип. Справа: бургер-меню (onMenu) либо right.
 export function Frame({ title, subtitle, onBack, onMenu, right, children, footer, scrollKey }) {
   return (
     <div className="phone">
       <div className="tbar">
         {onBack
           ? <button className="tbar-back" onClick={onBack} aria-label="Назад"><IcBack /></button>
-          : onMenu
-            ? <button className="tbar-back" onClick={onMenu} aria-label="Меню"><IcMenu /></button>
-            : <div className="tbar-logo"><img src="/logo-mark.svg" alt="Dation" /></div>}
+          : <div className="tbar-logo"><img src="/logo-mark.svg" alt="Dation" /></div>}
         <div className="tbar-title">
           <div className="t">{title}</div>
           {subtitle && <div className="s">{subtitle}</div>}
         </div>
-        {right}
+        {onMenu
+          ? <button className="tbar-ico" onClick={onMenu} aria-label="Меню"><IcMenu /></button>
+          : right}
       </div>
       <div className={'scroll' + (footer ? ' with-mainbtn' : '')} key={scrollKey}>
         {children}
@@ -59,4 +50,22 @@ export function Stars({ value }) {
 // Аватар с инициалами
 export function Ava({ children, className = '' }) {
   return <div className={'ava ' + className}>{children}</div>
+}
+
+// Нижняя шторка (bottom-sheet): затемнение + панель с ручкой, заголовком и крестиком.
+// footer — опциональная закреплённая кнопка снизу.
+export function Sheet({ title, onClose, children, footer }) {
+  return (
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-grip" />
+        <div className="sheet-head">
+          <h3>{title}</h3>
+          <button className="sheet-x" onClick={onClose} aria-label="Закрыть"><IcClose size={18} /></button>
+        </div>
+        <div className={'sheet-body' + (footer ? ' with-foot' : '')}>{children}</div>
+        {footer && <div className="sheet-foot">{footer}</div>}
+      </div>
+    </div>
+  )
 }

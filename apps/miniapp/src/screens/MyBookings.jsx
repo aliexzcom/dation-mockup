@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
-import { Frame, Ava, ThemeBtn } from '../components/ui.jsx'
-import { IcCalCheck, IcPin, IcUser, IcClock } from '../icons.jsx'
-import { CLIENT, MY_BOOKINGS, fmtPrice, fmtDur, fmtDateFull } from '../data.js'
+import { Frame, Ava } from '../components/ui.jsx'
+import { IcCalCheck, IcPin, IcUser, IcClock, IcPhone } from '../icons.jsx'
+import { MY_BOOKINGS, fmtPrice, fmtDur, fmtDateFull } from '../data.js'
 
 const STATUS = {
   upcoming: { cls: 'violet', label: 'Предстоит' },
@@ -9,33 +9,40 @@ const STATUS = {
   cancelled: { cls: 'gray', label: 'Отменён' },
 }
 
-export default function MyBookings({ theme }) {
+export default function MyBookings() {
   const navigate = useNavigate()
   const upcoming = MY_BOOKINGS.filter((b) => b.status === 'upcoming')
   const history = MY_BOOKINGS.filter((b) => b.status !== 'upcoming')
 
   return (
     <Frame
-      title="История посещений"
-      subtitle={`${CLIENT.name} · ${CLIENT.tgUser}`}
-      onBack={() => navigate(-1)}
-      right={<ThemeBtn theme={theme} />}
+      title="История записей"
+      onMenu={() => navigate('/menu')}
     >
       <div className="pad">
-        {!MY_BOOKINGS.length && (
+        <div className="allrec">
+          <span className="allrec-ico"><IcPhone size={20} /></span>
+          <div>
+            <div className="allrec-t">Показать все мои записи</div>
+            <div className="allrec-s">Поделитесь номером — подтянем историю из базы</div>
+          </div>
+        </div>
+
+        {!MY_BOOKINGS.length ? (
           <div className="empty">
             <div className="ei"><IcCalCheck size={30} /></div>
-            <h4>Записей пока нет</h4>
+            <h4>Тут пока пусто</h4>
             <p className="muted">Запишитесь на услугу — она появится здесь.</p>
-            <button className="btn" style={{ maxWidth: 220, margin: '14px auto 0' }} onClick={() => navigate('/booking')}>Записаться</button>
+            <button className="btn" style={{ maxWidth: 240, margin: '14px auto 0' }} onClick={() => navigate('/')}>Записаться</button>
           </div>
+        ) : (
+          <>
+            {upcoming.length > 0 && <div className="sec-title">Предстоящие</div>}
+            {upcoming.map((b) => <BookingCard key={b.id} b={b} />)}
+            {history.length > 0 && <div className="sec-title">История</div>}
+            {history.map((b) => <BookingCard key={b.id} b={b} />)}
+          </>
         )}
-
-        {upcoming.length > 0 && <div className="sec-title">Предстоящие</div>}
-        {upcoming.map((b) => <BookingCard key={b.id} b={b} />)}
-
-        {history.length > 0 && <div className="sec-title">История</div>}
-        {history.map((b) => <BookingCard key={b.id} b={b} />)}
       </div>
     </Frame>
   )
@@ -55,9 +62,7 @@ function BookingCard({ b }) {
         <span className={'badge ' + st.cls}>{st.label}</span>
       </div>
 
-      <div>
-        {b.services.map((s, i) => <span key={i} className="schip">{s.name}</span>)}
-      </div>
+      <div>{b.services.map((s, i) => <span key={i} className="schip">{s.name}</span>)}</div>
 
       <div className="divider" />
       <div className="pick-meta" style={{ marginBottom: 4 }}><IcUser size={14} style={{ verticalAlign: '-2px' }} /> {b.master}</div>

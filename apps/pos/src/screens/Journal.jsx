@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Tick, Badge } from '../components/ui.jsx'
 import {
-  IcClose, IcArrowL, IcArrowR, IcPlay, IcCheck, IcPhone,
-  IcCash, IcCard, IcWallet, IcReceipt, IcCalendar, IcColumns,
+  IcPlus, IcClose, IcArrowL, IcArrowR, IcPlay, IcCheck, IcPhone,
+  IcCash, IcCard, IcWallet, IcReceipt, IcCalendar, IcColumns, IcList, IcClock,
 } from '../icons.jsx'
 import {
   TODAY_APPOINTMENTS, SERVICES, STAFF, STATUS, PAY_METHODS,
@@ -13,9 +13,13 @@ import { formatUzbPhone, isUzbPhoneValid } from '../phone.js'
 // Параметры сетки дня (как в журнале веб-аппа): часы 09:00–20:00
 const HOURS = Array.from({ length: 12 }, (_, i) => 9 + i)
 const START_HOUR = 9
-const HOUR_H = 100
+const HOUR_H = 160
 const HEADER_H = 66
 const GRID_H = HOURS.length * HOUR_H
+const SLOTS_PER_HOUR = 4                 // шаг 15 минут
+const SLOT_H = HOUR_H / SLOTS_PER_HOUR
+const SLOTS = HOURS.flatMap((h) => Array.from({ length: SLOTS_PER_HOUR }, (_, q) => h + q / SLOTS_PER_HOUR))
+const fmtSlot = (t) => { const h = Math.floor(t); const m = Math.round((t - h) * 60); return `${h}:${String(m).padStart(2, '0')}` }
 
 // Цвета карточек записи по статусу (светлые «стикеры», читаются в обеих темах)
 const STATUS_HEX = {
@@ -27,6 +31,15 @@ const STATUS_HEX = {
 }
 const apptDurMin = (a) => a.services.reduce((s, x) => s + (SERVICES.find((v) => v.id === x.id)?.dur || 0), 0)
 const timeToHour = (t) => { const [h, m] = t.split(':').map(Number); return h + (m || 0) / 60 }
+// Время слота в формате HH:MM (для подстановки в создание записи)
+const slotHHMM = (t) => `${String(Math.floor(t)).padStart(2, '0')}:${String(Math.round((t % 1) * 60)).padStart(2, '0')}`
+// Диапазон времени записи: «09:30–11:10» (начало + суммарная длительность услуг)
+const apptRange = (a) => {
+  const endMin = Math.round(timeToHour(a.time) * 60) + apptDurMin(a)
+  const hh = String(Math.floor(endMin / 60)).padStart(2, '0')
+  const mm = String(endMin % 60).padStart(2, '0')
+  return `${a.time}–${hh}:${mm}`
+}
 
 // Колонки канбан-доски (по статусам — слева направо по флоу)
 const COLUMNS = [
@@ -42,6 +55,7 @@ export default function Journal({ employee, creating, setCreating }) {
   const [view, setView] = useState('grid')      // 'grid' | 'board'
   const [openId, setOpenId] = useState(null)   // запись в drawer
   const [payId, setPayId] = useState(null)      // запись в модалке оплаты
+  const [prefill, setPrefill] = useState(null)  // подстановка мастера/времени для создания
 
   const open = appts.find((a) => a.id === openId) || null
   const paying = appts.find((a) => a.id === payId) || null
@@ -76,6 +90,8 @@ export default function Journal({ employee, creating, setCreating }) {
 
   return (
     <>
+      <button className="fab" onClick={() => { setPrefill(null); setCreating(true) }} aria-label="Создать запись"><IcPlus size={26} /></button>
+
       <div className="stat-row">
         <div className="stat"><div className="l">Записей сегодня</div><div className="v">{stats.count}</div></div>
         <div className="stat"><div className="l">Выручка</div><div className="v">{stats.revenue.toLocaleString('ru-RU')}</div></div>
@@ -93,12 +109,14 @@ export default function Journal({ employee, creating, setCreating }) {
         <div className="seg">
           <button className={'seg-btn' + (view === 'grid' ? ' active' : '')} onClick={() => setView('grid')}><IcCalendar size={16} /> Сетка</button>
           <button className={'seg-btn' + (view === 'board' ? ' active' : '')} onClick={() => setView('board')}><IcColumns size={16} /> Канбан</button>
+          <button className={'seg-btn' + (view === 'archive' ? ' active' : '')} onClick={() => setView('archive')}><IcList size={16} /> Архив</button>
         </div>
       </div>
 
-      {view === 'board'
-        ? <Kanban appts={appts} onOpen={setOpenId} onMove={moveAppt} />
-        : <DayGrid appts={appts} masters={masters} onOpen={setOpenId} />}
+      {view === 'board' && <Kanban appts={appts} onOpen={setOpenId} onMove={moveAppt} />}
+      {view === 'archive' && <ArchiveList appts={appts} onOpen={setOpenId} onRestore={(id) => setStatus(id, 'booked')} />}
+      {view === 'grid' && <DayGrid appts={appts} masters={masters} onOpen={setOpenId}
+        onCell={(masterId, time) => { setPrefill({ masterId, time }); setCreating(true) }} />}
 
       {open && (
         <ApptDrawer
@@ -110,7 +128,7 @@ export default function Journal({ employee, creating, setCreating }) {
         />
       )}
 
-      {creating && <CreateDrawer employee={employee} onClose={() => setCreating(false)} onSave={addAppt} />}
+      {creating && <CreateDrawer employee={employee} prefill={prefill} onClose={() => { setCreating(false); setPrefill(null) }} onSave={addAppt} />}
 
       {paying && <PaymentModal a={paying} onClose={() => setPayId(null)} onPaid={(m) => pay(paying.id, m)} />}
     </>
@@ -119,15 +137,15 @@ export default function Journal({ employee, creating, setCreating }) {
 
 // Сетка дня: колонки мастеров × часовая шкала, карточки записей позиционированы
 // по времени начала и длительности (как журнал в веб-аппе).
-function DayGrid({ appts, masters, onOpen }) {
+function DayGrid({ appts, masters, onOpen, onCell }) {
   return (
     <div style={{ border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', background: 'var(--panel)' }}>
       <div style={{ display: 'flex', overflowX: 'auto' }}>
         {/* Часовая шкала */}
         <div style={{ width: 62, flexShrink: 0, borderRight: '1px solid var(--border)' }}>
           <div style={{ height: HEADER_H, borderBottom: '1px solid var(--border)' }} />
-          {HOURS.map((h) => (
-            <div key={h} style={{ height: HOUR_H, padding: '7px 10px 0', fontSize: 13.5, fontWeight: 600, color: 'var(--text-faint)', textAlign: 'right' }}>{h}:00</div>
+          {SLOTS.map((t) => (
+            <div key={t} style={{ height: SLOT_H, padding: '2px 10px 0', fontSize: 12, color: 'var(--text-faint)', textAlign: 'right', lineHeight: 1, fontWeight: t % 1 === 0 ? 700 : 400 }}>{fmtSlot(t)}</div>
           ))}
         </div>
 
@@ -144,8 +162,9 @@ function DayGrid({ appts, masters, onOpen }) {
                 </div>
               </div>
               <div style={{ position: 'relative', height: GRID_H }}>
-                {HOURS.map((h, i) => (
-                  <div key={h} style={{ position: 'absolute', left: 0, right: 0, top: i * HOUR_H, height: HOUR_H, borderBottom: '1px solid var(--border)', background: i % 2 ? 'var(--panel-soft)' : 'var(--panel)' }} />
+                {SLOTS.map((t, i) => (
+                  <div key={t} onClick={() => onCell(s.id, slotHHMM(t))} title="Создать запись"
+                    style={{ position: 'absolute', left: 0, right: 0, top: i * SLOT_H, height: SLOT_H, cursor: 'pointer', borderBottom: t % 1 === 0.75 ? '1px solid var(--border)' : '1px dashed var(--border)', background: Math.floor(t) % 2 ? 'var(--panel-soft)' : 'var(--panel)' }} />
                 ))}
                 {items.map((a) => <GridCell key={a.id} a={a} onOpen={onOpen} />)}
               </div>
@@ -164,7 +183,7 @@ function GridCell({ a, onOpen }) {
   return (
     <div onClick={() => onOpen(a.id)} title="Открыть запись"
       style={{ position: 'absolute', left: 7, right: 7, top: top + 4, height, background: col.c, borderLeft: `5px solid ${col.b}`, borderRadius: 12, padding: '9px 12px', cursor: 'pointer', overflow: 'hidden', color: '#1F2937' }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#5B6472', marginBottom: 1 }}>{a.time} · {fmtPrice(sumServices(a.services))}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#5B6472', marginBottom: 1 }}>{apptRange(a)} · {fmtPrice(sumServices(a.services))}</div>
       <div style={{ fontWeight: 800, fontSize: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.client.name}</div>
       {a.services.map((s) => (
         <div key={s.id} style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.35, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
@@ -221,7 +240,7 @@ function KbCard({ a, dragging, onOpen, onDragStart, onDragEnd }) {
     <div className={'kb-card' + (dragging ? ' dragging' : '')} draggable
       onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={onOpen}>
       <div className="kb-top">
-        <span className="hh">{a.time}</span>
+        <span className="hh">{apptRange(a)}</span>
         <span className="src">{a.source}</span>
       </div>
       <div className="kb-client">{a.client.name}</div>
@@ -230,6 +249,36 @@ function KbCard({ a, dragging, onOpen, onDragStart, onDragEnd }) {
       <div className="kb-foot">
         <span className="kb-total">{fmtPrice(sumServices(a.services))}</span>
       </div>
+      {a.status === 'paid' && (
+        <div className="kb-expire"><IcClock size={13} /> Исчезнет через 30 минут</div>
+      )}
+    </div>
+  )
+}
+
+// Архив: отменённые записи списком с возможностью вернуть в работу
+function ArchiveList({ appts, onOpen, onRestore }) {
+  const cancelled = appts.filter((a) => a.status === 'cancelled')
+  if (cancelled.length === 0) {
+    return <div className="kb-empty" style={{ maxWidth: 640, margin: '4px 0' }}>Отменённых записей нет</div>
+  }
+  return (
+    <div style={{ maxWidth: 760 }}>
+      {cancelled.map((a) => {
+        const master = staffById(a.masterId)
+        return (
+          <div key={a.id} className="arch-row" onClick={() => onOpen(a.id)}>
+            <div className="arch-time">{apptRange(a)}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="arch-client">{a.client.name}</div>
+              <div className="arch-sub">{master?.name} · {a.services.map((s) => s.name).join(', ')}</div>
+            </div>
+            <Badge cls="gray">Отменена</Badge>
+            <span className="arch-total">{fmtPrice(sumServices(a.services))}</span>
+            <button className="btn ghost sm" onClick={(e) => { e.stopPropagation(); onRestore(a.id) }}>Вернуть</button>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -297,12 +346,12 @@ function ApptDrawer({ a, onClose, onStart, onFinish, onCancel, onPay }) {
   )
 }
 
-function CreateDrawer({ employee, onClose, onSave }) {
+function CreateDrawer({ employee, prefill, onClose, onSave }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('+998 ')
   const [picked, setPicked] = useState([])     // id услуг
-  const [masterId, setMasterId] = useState(employee.id)
-  const [time, setTime] = useState('18:00')
+  const [masterId, setMasterId] = useState(prefill?.masterId || employee.id)
+  const [time, setTime] = useState(prefill?.time || '18:00')
 
   const services = SERVICES.filter((s) => picked.includes(s.id))
   const total = sumServices(services)

@@ -32,35 +32,41 @@ export const CATEGORIES = [
   {
     id: 'hair', name: 'Парикмахерские услуги',
     services: [
-      { id: 's1', name: 'Женская стрижка', price: 180000, dur: 60, desc: 'Мытьё, стрижка, укладка' },
-      { id: 's2', name: 'Мужская стрижка', price: 120000, dur: 40, desc: 'Стрижка машинкой и ножницами' },
-      { id: 's3', name: 'Окрашивание в один тон', price: 350000, dur: 120, desc: 'Краситель и уход в подарок' },
-      { id: 's4', name: 'Укладка', price: 90000, dur: 40, desc: 'Локоны или гладкая укладка' },
+      { id: 's1', name: 'Женская стрижка', price: 180000, dur: 60, desc: 'Мытьё, стрижка, укладка', photo: 'https://picsum.photos/seed/dation-s1/400/300' },
+      { id: 's2', name: 'Мужская стрижка', price: 120000, dur: 40, desc: 'Стрижка машинкой и ножницами', photo: 'https://picsum.photos/seed/dation-s2/400/300' },
+      { id: 's3', name: 'Окрашивание в один тон', price: 350000, dur: 120, desc: 'Краситель и уход в подарок', photo: 'https://picsum.photos/seed/dation-s3/400/300' },
+      { id: 's4', name: 'Укладка', price: 90000, dur: 40, desc: 'Локоны или гладкая укладка', photo: 'https://picsum.photos/seed/dation-s4/400/300' },
     ],
   },
   {
     id: 'nails', name: 'Ногтевой сервис',
     services: [
-      { id: 's5', name: 'Маникюр с покрытием', price: 150000, dur: 90, desc: 'Аппаратный маникюр + гель-лак' },
-      { id: 's6', name: 'Педикюр', price: 200000, dur: 90, desc: 'Классический педикюр' },
-      { id: 's7', name: 'Снятие + укрепление', price: 80000, dur: 40, desc: 'Снятие старого покрытия' },
+      { id: 's5', name: 'Маникюр с покрытием', price: 150000, dur: 90, desc: 'Аппаратный маникюр + гель-лак', photo: 'https://picsum.photos/seed/dation-s5/400/300' },
+      { id: 's6', name: 'Педикюр', price: 200000, dur: 90, desc: 'Классический педикюр', photo: 'https://picsum.photos/seed/dation-s6/400/300' },
+      { id: 's7', name: 'Снятие + укрепление', price: 80000, dur: 40, desc: 'Снятие старого покрытия', photo: 'https://picsum.photos/seed/dation-s7/400/300' },
     ],
   },
   {
     id: 'brows', name: 'Брови и ресницы',
     services: [
-      { id: 's8', name: 'Коррекция и окрашивание бровей', price: 90000, dur: 40, desc: 'Форма + краска/хна' },
-      { id: 's9', name: 'Ламинирование ресниц', price: 220000, dur: 80, desc: 'Подкручивание и уход' },
+      { id: 's8', name: 'Коррекция и окрашивание бровей', price: 90000, dur: 40, desc: 'Форма + краска/хна', photo: 'https://picsum.photos/seed/dation-s8/400/300' },
+      { id: 's9', name: 'Ламинирование ресниц', price: 220000, dur: 80, desc: 'Подкручивание и уход', photo: 'https://picsum.photos/seed/dation-s9/400/300' },
     ],
   },
 ]
 
 export const STAFF = [
-  { id: 'm0', name: 'Любой свободный', spec: 'Подберём по времени', rating: null, any: true, initials: '?' },
-  { id: 'm1', name: 'Дильноза Каримова', spec: 'Стилист-колорист', rating: 4.9, initials: 'ДК', services: ['s1', 's3', 's4'] },
-  { id: 'm2', name: 'Азиз Рахимов', spec: 'Барбер', rating: 4.8, initials: 'АР', services: ['s2'] },
-  { id: 'm3', name: 'Нигора Саидова', spec: 'Мастер маникюра', rating: 5.0, initials: 'НС', services: ['s5', 's6', 's7'] },
-  { id: 'm4', name: 'Сабина Алиева', spec: 'Бровист, лешмейкер', rating: 4.9, initials: 'СА', services: ['s8', 's9'] },
+  { id: 'm0', name: 'Любой свободный', spec: 'Подберём по времени', rating: null, reviews: 0, any: true, initials: '?' },
+  { id: 'm1', name: 'Дильноза Каримова', spec: 'Топ-стилист', rating: 4.9, reviews: 35, initials: 'ДК', services: ['s1', 's3', 's4'], photo: 'https://picsum.photos/seed/dation-m1/200/200' },
+  { id: 'm2', name: 'Азиз Рахимов', spec: 'Барбер', rating: 4.8, reviews: 24, initials: 'АР', services: ['s2'], photo: 'https://picsum.photos/seed/dation-m2/200/200' },
+  { id: 'm3', name: 'Нигора Саидова', spec: 'Мастер маникюра', rating: 5.0, reviews: 22, initials: 'НС', services: ['s5', 's6', 's7'], photo: 'https://picsum.photos/seed/dation-m3/200/200' },
+  { id: 'm4', name: 'Сабина Алиева', spec: 'Бровист · лешмейкер', rating: 4.9, reviews: 18, initials: 'СА', services: ['s8', 's9'], photo: 'https://picsum.photos/seed/dation-m4/200/200' },
+]
+
+// Телеграм-каналы филиалов (для экрана профиля)
+export const TG_CHANNELS = [
+  { id: 'tc1', name: 'Амира Темура', href: 'https://t.me/dation' },
+  { id: 'tc2', name: 'Mirzo Center', href: 'https://t.me/dation' },
 ]
 
 // Готовые слоты времени по периодам
@@ -94,8 +100,6 @@ export const MY_BOOKINGS = [
   },
 ]
 
-export const PREPAY_AMOUNT = 50000 // фиксированный депозит
-
 // Отзывы клиентов
 export const REVIEWS = [
   { id: 'r1', name: 'Камила Ю.', rating: 5, date: '28 июня', text: 'Лучший мастер! Стрижка именно как хотела, приду ещё.' },
@@ -106,14 +110,6 @@ export const REVIEWS = [
   { id: 'r6', name: 'Гульнара Т.', rating: 4, date: '12 июня', text: 'Записалась онлайн за минуту, мастер приняла вовремя.' },
   { id: 'r7', name: 'Мадина Х.', rating: 5, date: '8 июня', text: 'Брови привели в идеальную форму, очень довольна.' },
   { id: 'r8', name: 'Лола И.', rating: 5, date: '3 июня', text: 'Приятные цены и внимательное отношение. Рекомендую!' },
-]
-
-// Фото работ салона (в реальном приложении — загруженные фото)
-export const WORK_PHOTOS = [
-  'https://picsum.photos/seed/dation-a/500',
-  'https://picsum.photos/seed/dation-b/500',
-  'https://picsum.photos/seed/dation-c/500',
-  'https://picsum.photos/seed/dation-d/500',
 ]
 
 // ---------- Хелперы ----------
@@ -148,3 +144,11 @@ export function fmtDateFull(key) {
   const dt = new Date(y, m - 1, d)
   return `${WD[dt.getDay()]}, ${d} ${MO_FULL[m - 1]}`
 }
+
+export function fmtDateShort(key) {
+  if (!key) return ''
+  const [, m, d] = key.split('-').map(Number)
+  return `${d} ${MO[m - 1]}`
+}
+
+export const fmtRating = (r) => (r % 1 === 0 ? String(r) : r.toFixed(r * 100 % 10 === 0 ? 1 : 2))
